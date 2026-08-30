@@ -37,9 +37,9 @@ jobs:
           await post('areasAndLengths', {
             f: 'json',
             sr: '4326',
-            polygons: JSON.stringify({ geometryType:'esriGeometryPolygon', geometries:[squareA] }),
-            areaUnit: 'esriSquareFeet',
-            lengthUnit: 'esriFeet',
+            polygons: JSON.stringify([squareA]),
+            areaUnit: JSON.stringify({ areaUnit: 'esriSquareFeet' }),
+            lengthUnit: '9002',
             calculationType: 'geodesic',
           });
 
@@ -47,7 +47,7 @@ jobs:
             f: 'json',
             sr: '4326',
             geometries: JSON.stringify({ geometryType:'esriGeometryPolygon', geometries:[squareB] }),
-            geometry: JSON.stringify(squareA),
+            geometry: JSON.stringify({ geometryType:'esriGeometryPolygon', geometry:squareA }),
           });
 
           if (!Array.isArray(intersection.geometries) || intersection.geometries.length !== 1) {
