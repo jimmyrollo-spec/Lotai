@@ -12,6 +12,7 @@ export function SiteHeader() {
         <nav className="site-nav" aria-label="Primary navigation">
           <Link href="/#projects">Projects</Link>
           <Link href="/coverage">Coverage</Link>
+          <Link href="/sources">Sources</Link>
           <Link href="/methodology">Methodology</Link>
           <span className="nav-divider" />
           <Link className="nav-cta" href="/#analyze">Check a property</Link>
