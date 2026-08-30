@@ -28,6 +28,14 @@
 .background { fill: rgba(255, 255, 255, 0.36); }
 .grid { opacity: 0.55; }
 .parcelFill { fill: rgba(24, 199, 154, 0.16); }
+.building {
+  fill: #20344a;
+  fill-opacity: 0.78;
+  stroke: #07111c;
+  stroke-opacity: 0.42;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
 .parcelLine {
   stroke: #0c8f70;
   stroke-width: 1.15;
@@ -91,6 +99,11 @@
 .parcelSwatch {
   background: rgba(24, 199, 154, 0.18);
   border: 1px solid #0c8f70;
+}
+
+.buildingSwatch {
+  background: #20344a;
+  border: 1px solid #07111c;
 }
 
 .pinSwatch {
