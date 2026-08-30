@@ -93,7 +93,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <strong>Feasibility still in prototype</strong>
           <span>
             {liveProperty
-              ? "The property match, parcel boundary, flood screening and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, proposed-project placement and remaining demonstration checks are still prototype and must not be used as permit advice."
+              ? "The property match, parcel boundary, mapped building footprints, flood screening and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, proposed-project placement and remaining demonstration checks are still prototype and must not be used as permit advice."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -162,7 +162,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                 <div className="result-section-card__header">
                   <div>
                     <span className="card-kicker">Official spatial data · parcel-level</span>
-                    <h3>Property boundary and mapped flood screening</h3>
+                    <h3>Property boundary, mapped structures and flood screening</h3>
                   </div>
                   <span className="evidence-count">City of Austin GIS</span>
                 </div>
@@ -170,9 +170,10 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   geometry={liveProperty.parcel.geometry}
                   location={liveProperty.location}
                   floodIntersects={liveProperty.flood.parcelIntersectsMappedFloodplain}
+                  buildingFootprints={liveProperty.structures.buildingFootprints}
                 />
                 <p className="map-disclaimer">
-                  Parcel geometry comes from the City of Austin TCAD parcel layer. Flood screening tests the full parcel against the City FEMA and fully-developed floodplain layers; it does not determine whether a proposed project footprint itself lies inside a regulated area.
+                  Parcel geometry comes from the City of Austin TCAD parcel layer. Building footprints come from the City&apos;s 2023 planimetric survey. Flood screening tests the full parcel against the City FEMA and fully-developed floodplain layers. None of these layers alone establish a legal survey boundary or proposed-project placement.
                 </p>
               </article>
             ) : (
@@ -237,6 +238,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   <div><dt>Property ID</dt><dd>{liveProperty.parcel.propertyId || "Unavailable"}</dd></div>
                   <div><dt>Zoning</dt><dd>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Unavailable"}</dd></div>
                   <div><dt>Jurisdiction</dt><dd>{jurisdictionDisplay}</dd></div>
+                  <div><dt>Mapped buildings</dt><dd>{liveProperty.structures.buildingCount} · 2023</dd></div>
+                  <div><dt>Impervious features</dt><dd>{liveProperty.impervious.featureCount} detected · no % yet</dd></div>
                   <div><dt>Flood scan</dt><dd>{floodLabel(liveProperty.flood.parcelIntersectsMappedFloodplain)}</dd></div>
                   <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
                 </dl>
