@@ -6,7 +6,7 @@
 
 ## Current phase
 
-**Phase 2 — data foundation STARTED**
+**Phase 2 — data foundation IN PROGRESS**
 
 Phase 1 established the visual/product contract. Phase 1.1 tightened the live hero conversion experience without redesigning the established system.
 
@@ -31,6 +31,7 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - [x] Address field clipping corrected through desktop layout rebalance
 - [x] Primary CTA simplified to `Check property`
 - [x] Demo-property shortcut added
+- [x] Public Coverage page added to expose live/partial/not-yet-supported status
 - [ ] Final brand/domain
 
 ### Phase 2 progress
@@ -42,28 +43,38 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - [x] Source URLs stored alongside the provider output
 - [x] `/api/coverage/austin?address=...` diagnostic endpoint added
 - [x] Workspace can show a live Austin property match separately from prototype feasibility conclusions
-- [x] CI build verified after Austin integration
-- [ ] Validate multiple Austin addresses against the deployed endpoint
+- [x] Normalized regulatory-rule type contract added
+- [x] First Austin detached-garage verified seed rule pack added under `data/rules/austin/`
+- [x] Project-detail workflow added for garage width, depth, height, stories, placement and plumbing
+- [x] First source-backed Austin rule evaluator added
+- [x] Live regulatory facts panel added with direct source links
+- [x] Austin permit-exemption threshold logic implemented without converting it into an unsupported permit conclusion
+- [x] Austin qualifying SF-1/SF-2/SF-3 low-accessory rear-setback fact implemented
+- [x] 2026 garage-placement interpretation deliberately held at manual-review status
+- [x] CI build verified after live rule-fact integration
+- [x] Railway deployment verified after live rule-fact integration
+- [ ] Validate multiple Austin addresses against the deployed endpoint in-browser
 - [ ] Confirm exact jurisdiction field mapping from returned GIS attributes
 - [ ] Render authoritative parcel polygon on the workspace map
+- [ ] Add flood-hazard lookup so the small-structure exemption can resolve that condition
 - [ ] Add Postgres/PostGIS schema and migrations
-- [ ] Build normalized Austin detached-garage rule set
-- [ ] Replace demo feasibility checks with source-backed analysis for supported Austin properties
+- [ ] Expand detached-garage rules for side/front setbacks, impervious cover, overlays and permit path
+- [ ] Replace the overall demo feasibility verdict with a source-backed Austin analysis only when material checks are complete
 
 ### Explicitly NOT live yet
 - National address autocomplete/geocoding
 - Production parcel resolution outside the Austin proof integration
 - Production map provider
-- Detached-garage rules engine
+- Complete detached-garage feasibility engine
 - Permit history
-- Real feasibility/confidence scoring
+- Real overall feasibility/confidence scoring
 - Authentication
 - Payments
 - PDF reports
 - Analytics
 - Professional dashboard
 
-`lib/demo-data.ts` still supplies feasibility conclusions. When a successful Austin GIS match appears, it is explicitly separated and labeled as live official property data; demo feasibility must never be presented as a live conclusion.
+`lib/demo-data.ts` still supplies the overall feasibility verdict and remaining demonstration checks. Successful Austin GIS matches and sections labeled `Live regulatory facts` are source-backed and intentionally separated from the demo verdict.
 
 ## Current V1 project priority
 
