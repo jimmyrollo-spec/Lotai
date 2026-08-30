@@ -22,7 +22,8 @@ Goal: establish the visual/product contract and make the primary journey tangibl
 - [x] Evidence/confidence UX concept
 - [x] Methodology authority page
 - [x] Responsive/mobile styling
-- [ ] Production build verified after commit
+- [x] Production build verified in GitHub Actions
+- [x] CI build check runs on pushes/PRs to `main`
 - [ ] Railway deployment
 - [ ] Final brand/domain
 
