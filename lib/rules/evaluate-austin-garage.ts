@@ -1,4 +1,5 @@
 export type AustinGarageIntendedUse = "vehicle_storage" | "workshop_storage" | "habitable" | "unsure";
+export type AustinGaragePlacement = "rear" | "side" | "front" | "unsure";
 
 export type AustinGarageInputs = {
   widthFt: number | null;
@@ -7,6 +8,7 @@ export type AustinGarageInputs = {
   stories: number | null;
   plumbing: "yes" | "no" | "unsure";
   intendedUse: AustinGarageIntendedUse;
+  placement: AustinGaragePlacement;
   baseZoning: string | null;
   floodIntersectsMappedFloodplain: boolean | null;
 };
@@ -23,13 +25,21 @@ export type AustinGarageRuleFact = {
 
 const WORK_EXEMPT_URL = "https://www.austintexas.gov/development-services/work-exempt-building-permits";
 const DISTRICT_RULES_URL = "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART3ADRECEDI";
-const GARAGE_INTERPRETATIONS_URL = "https://www.austintexas.gov/development-services/code-interpretations";
+const SITE_DEVELOPMENT_URL = "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART2PRUSDERE_DIV1RETA_S25-2-492SIDERE";
+const GARAGE_PLACEMENT_URL = "https://library.municode.com/tx/austin/codes/code_of_ordinances/469236?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART4ADRECEUS_DIV2COUS_S25-2-815LAREUS";
 const FLOODPLAIN_GUIDANCE_URL = "https://www.austintexas.gov/watershed-protection/programs/floodplain-management";
+const HOME_AMENDMENTS_URL = "https://www.austintexas.gov/development-services/home-amendments";
+
+const singleFamilyBaseStandards = {
+  "SF-1": { front: 25, streetSide: 15, interiorSide: 5, rear: 10, buildingCover: 35, imperviousCover: 40 },
+  "SF-2": { front: 25, streetSide: 15, interiorSide: 5, rear: 10, buildingCover: 40, imperviousCover: 45 },
+  "SF-3": { front: 25, streetSide: 15, interiorSide: 5, rear: 10, buildingCover: 40, imperviousCover: 45 },
+} as const;
 
 function cleanBaseZoning(value: string | null) {
   if (!value) return null;
   const match = value.toUpperCase().match(/\b(SF-[123])\b/);
-  return match?.[1] ?? null;
+  return match?.[1] as keyof typeof singleFamilyBaseStandards | undefined ?? null;
 }
 
 function exemptionUseState(intendedUse: AustinGarageIntendedUse) {
@@ -42,6 +52,7 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
   const facts: AustinGarageRuleFact[] = [];
   const area = inputs.widthFt && inputs.depthFt ? inputs.widthFt * inputs.depthFt : null;
   const baseZoning = cleanBaseZoning(inputs.baseZoning);
+  const baseStandards = baseZoning ? singleFamilyBaseStandards[baseZoning] : null;
 
   if (inputs.floodIntersectsMappedFloodplain === true) {
     facts.push({
@@ -72,6 +83,38 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
       explanation: "The parcel geometry or floodplain query was not available, so the flood-hazard condition remains unresolved rather than being assumed clear.",
       sourceLabel: "City of Austin · Floodplain Management / GIS",
       sourceUrl: FLOODPLAIN_GUIDANCE_URL,
+    });
+  }
+
+  if (baseZoning && baseStandards) {
+    facts.push({
+      id: "base-yard-setbacks",
+      label: `${baseZoning} base yard setbacks`,
+      value: `Front ${baseStandards.front} ft · side ${baseStandards.interiorSide} ft · street side ${baseStandards.streetSide} ft · rear ${baseStandards.rear} ft`,
+      tone: "neutral",
+      explanation: `These are the current base-district site-development standards shown for ${baseZoning}. More specific rules can supersede them, including the five-foot rear-yard rule for a qualifying low accessory building. A corner lot, overlay, easement or garage-placement rule can also change what controls at the proposed location.`,
+      sourceLabel: "Austin LDC · § 25-2-492 Site Development Regulations",
+      sourceUrl: SITE_DEVELOPMENT_URL,
+    });
+
+    facts.push({
+      id: "base-building-cover-limit",
+      label: `${baseZoning} maximum building coverage`,
+      value: `${baseStandards.buildingCover}% · current site percentage pending`,
+      tone: "neutral",
+      explanation: `The current base-district table lists a maximum building coverage of ${baseStandards.buildingCover}% for ${baseZoning}. The City states garages and carports continue to count toward building coverage. We are not comparing the proposed garage to this limit until existing mapped structures are clipped and measured against the parcel geometry.`,
+      sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
+      sourceUrl: HOME_AMENDMENTS_URL,
+    });
+
+    facts.push({
+      id: "base-impervious-cover-limit",
+      label: `${baseZoning} maximum impervious cover`,
+      value: `${baseStandards.imperviousCover}% · current site percentage pending`,
+      tone: "neutral",
+      explanation: `The current base-district table lists a maximum impervious cover of ${baseStandards.imperviousCover}% for ${baseZoning}. Austin's current HOME guidance confirms garages and carports count toward impervious cover. The live provider has mapped impervious features, but the percentage is deliberately withheld until geometry is clipped to the parcel and measured correctly.`,
+      sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
+      sourceUrl: HOME_AMENDMENTS_URL,
     });
   }
 
@@ -142,8 +185,8 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
         id: "rear-setback-sf1-sf3",
         label: "Rear setback for qualifying low accessory building",
         value: "5 ft",
-        tone: "positive",
-        explanation: `The mapped base zoning appears to include ${baseZoning}. For SF-1, SF-2 and SF-3, Austin's district regulations state a five-foot rear-yard setback for an accessory building no more than one story or 15 ft high. Easements, overlays and other site conditions still need separate review.`,
+        tone: inputs.placement === "rear" ? "positive" : "neutral",
+        explanation: `The mapped base zoning appears to include ${baseZoning}. For SF-1, SF-2 and SF-3, Austin's district regulations state a five-foot rear-yard setback for an accessory building no more than one story or 15 ft high. ${inputs.placement === "rear" ? "The proposed placement is rear yard, so this is directly relevant." : "The proposed placement is not currently marked rear yard, so this is retained as a property rule rather than a project pass/fail."} Easements and overlays still need separate review.`,
         sourceLabel: "Austin LDC · §§ 25-2-553 through 25-2-555",
         sourceUrl: DISTRICT_RULES_URL,
       });
@@ -161,13 +204,13 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
   }
 
   facts.push({
-    id: "garage-placement-interpretation",
+    id: "garage-placement",
     label: "Garage placement relative to the street-facing façade",
-    value: "Manual review required",
+    value: inputs.placement === "front" ? "Front placement requires geometry check" : "Rule known · site geometry still required",
     tone: "warning",
-    explanation: "Austin posted an updated 2026 code interpretation specifically for parking-structure / garage placement. We are keeping this check unresolved until the interpretation and the property's exact placement/orientation can be applied deterministically.",
-    sourceLabel: "City of Austin · CI2026-0001 Garage Placement",
-    sourceUrl: GARAGE_INTERPRETATIONS_URL,
+    explanation: "Austin's garage-placement rule says a parking structure may not be closer to the front lot line than the front-most first-floor building façade. It also adds a width condition when a front-facing garage entrance is less than 20 ft behind that façade. The 2026 City interpretation is current, but the beta does not yet have the façade/front-lot-line geometry needed to apply the rule automatically.",
+    sourceLabel: "Austin LDC · Garage Placement + CI2026-0001",
+    sourceUrl: GARAGE_PLACEMENT_URL,
   });
 
   return facts;
