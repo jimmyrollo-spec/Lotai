@@ -1,6 +1,7 @@
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { austinSourceLinks } from "@/lib/providers/austin";
+import styles from "./sources.module.css";
 
 const sourceRows = [
   {
@@ -103,15 +104,15 @@ export default function SourcesPage() {
 
             <section id="austin">
               <h2>2. Austin property and spatial sources</h2>
-              <div className="source-registry">
+              <div className={styles.registry}>
                 {sourceRows.map((source) => (
-                  <article className="source-registry__row" key={source.name}>
+                  <article className={styles.row} key={source.name}>
                     <div>
                       <span className="card-kicker">{source.authority}</span>
                       <h3>{source.name}</h3>
                       <p>{source.use}</p>
                     </div>
-                    <div className="source-registry__meta">
+                    <div className={styles.meta}>
                       <span>{source.status}</span>
                       <span>{source.freshness}</span>
                       <a href={source.url} target="_blank" rel="noreferrer">Open official source ↗</a>
