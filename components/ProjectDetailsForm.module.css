@@ -1,0 +1,144 @@
+.card {
+  margin: 18px 0 26px;
+  overflow: hidden;
+  border: 1px solid #d9e0e7;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(8, 24, 39, 0.05);
+}
+
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #6d7f90;
+  font-family: var(--font-mono), monospace;
+  font-size: .58rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 0;
+  color: #07111c;
+  font-size: 1.05rem;
+  letter-spacing: -.025em;
+}
+
+.header p {
+  max-width: 480px;
+  margin: 0;
+  color: #6d7f90;
+  font-size: .72rem;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  padding: 18px 22px 12px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.field span {
+  color: #6d7f90;
+  font-family: var(--font-mono), monospace;
+  font-size: .57rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid #d9e0e7;
+  border-radius: 9px;
+  outline: none;
+  color: #07111c;
+  background: #fbfcfb;
+  font-size: .78rem;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #5f8cff;
+  box-shadow: 0 0 0 3px rgba(95, 140, 255, .12);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 22px 18px;
+}
+
+.summary {
+  color: #6d7f90;
+  font-size: .7rem;
+}
+
+.submit {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  color: #06130f;
+  background: #18c79a;
+  font-weight: 760;
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.submit:hover {
+  background: #33d8ad;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .header {
+    display: grid;
+    gap: 8px;
+  }
+
+  .header p {
+    text-align: left;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    padding-inline: 16px;
+  }
+
+  .footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding-inline: 16px;
+  }
+
+  .submit {
+    width: 100%;
+  }
+}
