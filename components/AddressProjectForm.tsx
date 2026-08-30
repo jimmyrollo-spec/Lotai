@@ -8,6 +8,9 @@ type Props = {
   compact?: boolean;
 };
 
+const DEMO_ADDRESS = "Sample property";
+const DEMO_PROJECT: ProjectKey = "garage";
+
 export function AddressProjectForm({ compact = false }: Props) {
   const router = useRouter();
   const [address, setAddress] = useState("");
@@ -19,8 +22,14 @@ export function AddressProjectForm({ compact = false }: Props) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const cleanAddress = address.trim() || "Sample property";
+    const cleanAddress = address.trim() || DEMO_ADDRESS;
     router.push(`/analyze?address=${encodeURIComponent(cleanAddress)}&project=${project}`);
+  }
+
+  function openDemo() {
+    setAddress(DEMO_ADDRESS);
+    setProject(DEMO_PROJECT);
+    router.push(`/analyze?address=${encodeURIComponent(DEMO_ADDRESS)}&project=${DEMO_PROJECT}`);
   }
 
   return (
@@ -36,8 +45,9 @@ export function AddressProjectForm({ compact = false }: Props) {
             <input
               value={address}
               onChange={(event) => setAddress(event.target.value)}
-              placeholder="Enter a U.S. property address"
+              placeholder="Enter a U.S. address"
               aria-label="Property address"
+              autoComplete="street-address"
             />
           </span>
         </label>
@@ -54,15 +64,17 @@ export function AddressProjectForm({ compact = false }: Props) {
         </label>
 
         <button className="button button--primary analysis-form__submit" type="submit">
-          Check this property
+          Check property
           <span aria-hidden="true">→</span>
         </button>
       </div>
 
       {!compact && (
         <div className="analysis-form__meta">
-          <span className="analysis-form__selected">Example: {selected.example}</span>
-          <span className="analysis-form__note">Prototype: live regulatory data is not connected yet.</span>
+          <span className="analysis-form__selected">Example project: {selected.example}</span>
+          <button className="analysis-form__demo-link" type="button" onClick={openDemo}>
+            View demo property →
+          </button>
         </div>
       )}
     </form>
