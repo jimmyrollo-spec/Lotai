@@ -7,10 +7,10 @@ type Props = {
 };
 
 const remainingChecks = [
-  "Complete applicable side/front setback and garage-placement checks",
-  "Calculate building / impervious cover from clipped site geometry",
+  "Resolve exact garage placement against the front lot line and existing façade geometry",
+  "Calculate existing + proposed building and impervious cover from clipped site geometry",
   "Resolve easements and other mapped overlays where reliable",
-  "Complete the project-specific permit and trade-permit path",
+  "Complete the project-specific building and trade-permit path",
 ];
 
 export function LiveAnalysisStatus({ facts, hasProjectDetails }: Props) {
