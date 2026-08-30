@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { AddressProjectForm } from "@/components/AddressProjectForm";
+import { AustinPermitHistoryPanel } from "@/components/AustinPermitHistoryPanel";
 import { LiveAnalysisStatus } from "@/components/LiveAnalysisStatus";
 import { LiveRuleFacts } from "@/components/LiveRuleFacts";
 import { OfficialParcelGraphic } from "@/components/OfficialParcelGraphic";
@@ -115,7 +117,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <strong>{liveProperty ? "Source-backed beta · no overall verdict yet" : "Prototype mode"}</strong>
           <span>
             {liveProperty
-              ? "The property match, parcel boundary, mapped building footprints, flood screening and Live regulatory facts are source-backed Austin data. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
+              ? "The property match, parcel boundary, mapped building footprints, flood screening, permit history and Live regulatory facts are source-backed Austin data. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -237,6 +239,18 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
               </article>
             )}
 
+            {liveProperty?.parcel.parcelId && (
+              <Suspense fallback={(
+                <article className="result-section-card">
+                  <div className="result-section-card__header">
+                    <div><span className="card-kicker">Official permit history</span><h3>Loading TCAD-matched permit records…</h3></div>
+                  </div>
+                </article>
+              )}>
+                <AustinPermitHistoryPanel tcadId={liveProperty.parcel.parcelId} />
+              </Suspense>
+            )}
+
             {!liveProperty && (
               <>
                 <article className="result-section-card">
@@ -280,6 +294,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   <div><dt>Mapped buildings</dt><dd>{liveProperty.structures.buildingCount} · 2023</dd></div>
                   <div><dt>Impervious features</dt><dd>{liveProperty.impervious.featureCount} detected · no % yet</dd></div>
                   <div><dt>Flood scan</dt><dd>{floodLabel(liveProperty.flood.parcelIntersectsMappedFloodplain)}</dd></div>
+                  <div><dt>Permit history</dt><dd>{liveProperty.parcel.parcelId ? "TCAD-matched · live" : "Unavailable"}</dd></div>
                   <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
                 </dl>
               ) : (
