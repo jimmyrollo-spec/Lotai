@@ -9,6 +9,8 @@ import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
 import { lookupAustinProperty } from "@/lib/providers/austin";
+import { lookupAustinMappedEasements } from "@/lib/providers/austin-easements";
+import { evaluateAustinEasementFact } from "@/lib/rules/evaluate-austin-easements";
 import { evaluateAustinGarageFacts, type AustinGarageIntendedUse, type AustinGaragePlacement } from "@/lib/rules/evaluate-austin-garage";
 
 type AnalyzeSearchParams = {
@@ -56,9 +58,9 @@ function percentLabel(value: number | null) {
 }
 
 const liveNextSteps = [
-  "Resolve the exact garage placement against the front lot line, existing façade, setbacks, easements and applicable overlays.",
-  "Measure the proposed footprint against existing impervious surfaces so the final project impervious-cover change can be calculated.",
-  "Confirm the complete building and trade-permit path before construction or paid design work begins.",
+  "Resolve the exact garage placement against the front lot line, existing façade, setbacks and any mapped easement geometry.",
+  "Confirm unmapped / recorded easements, survey conditions and other applicable overlays that cannot be cleared from the City map alone.",
+  "Measure the proposed footprint against existing impervious surfaces and confirm the complete building / trade-permit path.",
 ];
 
 export default async function AnalyzePage({ searchParams }: { searchParams: Promise<AnalyzeSearchParams> }) {
@@ -67,6 +69,9 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   const selectedProject = projectDefinitions.find((item) => item.key === params.project) ?? projectDefinitions[0];
   const liveProperty = address !== "Sample property"
     ? await lookupAustinProperty(address).catch(() => null)
+    : null;
+  const easementScreen = liveProperty?.parcel.geometry
+    ? await lookupAustinMappedEasements(liveProperty.parcel.geometry).catch(() => null)
     : null;
 
   const widthFt = toPositiveNumber(params.width);
@@ -78,7 +83,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   const placement = normalizePlacement(params.location);
   const hasProjectDetails = Boolean(params.width || params.depth || params.height || params.location || params.plumbing || params.intendedUse);
 
-  const liveRuleFacts = liveProperty && selectedProject.key === "garage" && hasProjectDetails
+  const garageRuleFacts = liveProperty && selectedProject.key === "garage" && hasProjectDetails
     ? evaluateAustinGarageFacts({
         widthFt,
         depthFt,
@@ -95,6 +100,9 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         existingImperviousAreaSqFt: liveProperty.impervious.existingImperviousAreaSqFt,
         existingImperviousCoveragePct: liveProperty.impervious.existingImperviousCoveragePct,
       })
+    : [];
+  const liveRuleFacts = liveProperty
+    ? [...garageRuleFacts, evaluateAustinEasementFact(easementScreen)]
     : [];
 
   const jurisdictionDisplay = liveProperty
@@ -132,7 +140,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <strong>{liveProperty ? "Source-backed beta · no overall verdict yet" : "Prototype mode"}</strong>
           <span>
             {liveProperty
-              ? "The property match, parcel boundary, parcel area, mapped building and impervious coverage, flood screening, permit history and Live regulatory facts are source-backed Austin data or derived from those mapped sources. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
+              ? "The property match, parcel boundary, parcel area, mapped building and impervious coverage, flood screening, mapped easement screen, permit history and Live regulatory facts are source-backed Austin data or derived from those mapped sources. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -207,7 +215,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                 <div className="result-section-card__header">
                   <div>
                     <span className="card-kicker">Official spatial data · parcel-level</span>
-                    <h3>Property boundary, mapped structures and flood screening</h3>
+                    <h3>Property boundary, mapped structures and constraints</h3>
                   </div>
                   <span className="evidence-count">City of Austin GIS</span>
                 </div>
@@ -216,9 +224,10 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   location={liveProperty.location}
                   floodIntersects={liveProperty.flood.parcelIntersectsMappedFloodplain}
                   buildingFootprints={liveProperty.structures.buildingFootprints}
+                  easementPolygons={easementScreen?.polygons ?? []}
                 />
                 <p className="map-disclaimer">
-                  Parcel geometry comes from the City of Austin TCAD parcel layer. Building footprints and impervious polygons come from the City&apos;s 2023 planimetric survey. Coverage areas are clipped to the mapped parcel, unioned to avoid overlap and measured geodesically through the City GeometryServer. These remain mapped screening calculations, not a legal survey or development-review determination.
+                  Parcel geometry comes from the City of Austin TCAD parcel layer. Building / impervious data comes from the 2023 planimetric survey and mapped easements come from the City Property layer. Coverage areas are clipped to the mapped parcel and measured through the City GeometryServer. Austin warns that not all easements are mapped. These remain screening sources, not a legal survey or title determination.
                 </p>
               </article>
             ) : !liveProperty ? (
@@ -309,6 +318,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   <div><dt>Mapped buildings</dt><dd>{liveProperty.structures.buildingCount} · {areaLabel(liveProperty.structures.existingBuildingAreaSqFt)}</dd></div>
                   <div><dt>Building coverage</dt><dd>{percentLabel(liveProperty.structures.existingBuildingCoveragePct)}</dd></div>
                   <div><dt>Impervious coverage</dt><dd>{percentLabel(liveProperty.impervious.existingImperviousCoveragePct)}</dd></div>
+                  <div><dt>Mapped easements</dt><dd>{easementScreen ? `${easementScreen.potentiallyActiveCount} potentially active*` : "Unavailable"}</dd></div>
                   <div><dt>Flood scan</dt><dd>{floodLabel(liveProperty.flood.parcelIntersectsMappedFloodplain)}</dd></div>
                   <div><dt>Permit history</dt><dd>{liveProperty.parcel.parcelId ? "TCAD-matched · live" : "Unavailable"}</dd></div>
                   <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
