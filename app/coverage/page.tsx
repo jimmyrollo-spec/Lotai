@@ -32,12 +32,12 @@ export default function CoveragePage() {
             <section id="current">
               <h2>1. Current coverage status</h2>
               <p>
-                The product is in an early data-integration phase. The public interface is production-built, but regulatory feasibility is not yet nationally live. Austin, Texas is the first technical proof market for direct official municipal GIS integration.
+                The product is in an early data-integration phase. Austin, Texas is the first technical proof market for direct official municipal GIS integration. Live Austin properties now use real source-backed property and spatial facts, but the system deliberately withholds an overall feasibility verdict until the remaining material project checks are complete.
               </p>
               <table className="method-table">
                 <thead><tr><th>Market</th><th>Property data</th><th>Project rules</th><th>Feasibility</th></tr></thead>
                 <tbody>
-                  <tr><td>Austin, TX</td><td>Live beta + parcel/flood screening</td><td>Verified seed — garage</td><td>Prototype overall verdict</td></tr>
+                  <tr><td>Austin, TX</td><td>Live beta + parcel / structures / flood</td><td>Verified seed — garage</td><td>Verdict withheld pending remaining checks</td></tr>
                   <tr><td>Other U.S. markets</td><td>Not yet supported</td><td>Not yet supported</td><td>Not yet supported</td></tr>
                 </tbody>
               </table>
@@ -46,13 +46,15 @@ export default function CoveragePage() {
             <section id="austin">
               <h2>2. Austin live-data beta</h2>
               <p>
-                An Austin address can be matched through the City of Austin address locator. The system then performs spatial queries against official City GIS layers for appraisal parcels, zoning, jurisdiction and mapped floodplain intersections. These property facts are kept separate from the prototype overall feasibility verdict.
+                An Austin address can be matched through the City of Austin address locator. The system then performs spatial queries against official City GIS layers for appraisal parcels, zoning, jurisdiction, 2023 mapped building footprints, 2023 impervious features and mapped floodplain intersections.
               </p>
               <ul>
                 <li>Official address match and match score</li>
                 <li>TCAD parcel identifier and official parcel polygon when returned</li>
                 <li>Mapped zoning classification when returned by the zoning layer</li>
                 <li>Mapped jurisdiction label, city and jurisdiction type</li>
+                <li>2023 building footprints rendered over the official parcel geometry</li>
+                <li>2023 impervious features detected as site evidence; no percentage is claimed until features are spatially clipped to the parcel</li>
                 <li>Parcel-level intersection screening against FEMA and fully-developed Austin floodplain layers</li>
               </ul>
               <p>
@@ -66,12 +68,12 @@ export default function CoveragePage() {
             <section id="projects">
               <h2>3. Project-rule coverage</h2>
               <p>
-                Detached garage / workshop is the first rule module. The initial Austin rule pack records current sources for residential accessory-garage use, the detached-accessory-structure building-permit exemption, the five-foot rear-setback exception for qualifying low accessory buildings in SF-1/SF-2/SF-3, parcel-level mapped flood screening, and a 2026 garage-placement interpretation that remains flagged for manual review.
+                Detached garage / workshop is the first rule module. The Austin beta applies supplied project dimensions, story count, plumbing and intended use to verified source records. It currently resolves the small detached-structure exemption conditions that can be supported by those inputs and mapped flood screening, plus the five-foot rear-setback rule for qualifying low accessory buildings in SF-1/SF-2/SF-3. A 2026 garage-placement interpretation remains manual review.
               </p>
               <table className="method-table">
                 <thead><tr><th>Project</th><th>Austin rule status</th><th>Automation status</th></tr></thead>
                 <tbody>
-                  <tr><td>Detached garage / workshop</td><td>Seed rules verified</td><td>Partial — source-backed facts, no final verdict yet</td></tr>
+                  <tr><td>Detached garage / workshop</td><td>Seed rules verified</td><td>Partial — source-backed facts, final verdict withheld</td></tr>
                   <tr><td>Deck</td><td>Research pending</td><td>Not live</td></tr>
                   <tr><td>Shed / accessory structure</td><td>Research pending</td><td>Not live</td></tr>
                   <tr><td>Pool</td><td>Research pending</td><td>Not live</td></tr>
@@ -89,6 +91,8 @@ export default function CoveragePage() {
                 <li><a className="text-link" href={austinSourceLinks.parcels} target="_blank" rel="noreferrer">City of Austin appraisal parcel layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.zoning} target="_blank" rel="noreferrer">City of Austin zoning layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.jurisdiction} target="_blank" rel="noreferrer">City of Austin jurisdiction layer ↗</a></li>
+                <li><a className="text-link" href={austinSourceLinks.buildingFootprints2023} target="_blank" rel="noreferrer">City of Austin 2023 building-footprint layer ↗</a></li>
+                <li><a className="text-link" href={austinSourceLinks.imperviousCover2023} target="_blank" rel="noreferrer">City of Austin 2023 impervious-cover layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.femaFloodplain} target="_blank" rel="noreferrer">City of Austin FEMA floodplain layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.fullyDevelopedFloodplain} target="_blank" rel="noreferrer">City of Austin fully-developed floodplain layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.floodplainGuidance} target="_blank" rel="noreferrer">City of Austin Floodplain Management guidance ↗</a></li>
@@ -101,7 +105,7 @@ export default function CoveragePage() {
                 A future market should only be called fully supported after the platform can resolve the property and jurisdiction, apply the relevant project rules, identify material mapped constraints, expose current source evidence and surface unresolved conditions instead of guessing.
               </p>
               <p>
-                Address recognition alone is not coverage. A zoning code alone is not coverage. The target is a decision-support result with enough evidence to explain why the system reached its conclusion.
+                Address recognition alone is not coverage. A zoning code alone is not coverage. The target is a decision-support result with enough evidence to explain why the system reached its conclusion. When the evidence is incomplete, the correct product behavior is to withhold the verdict.
               </p>
             </section>
           </div>
