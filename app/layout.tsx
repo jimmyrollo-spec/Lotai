@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Manrope } from "next/font/google";
 import "./globals.css";
+import "./hero-polish.css";
 import { brand } from "@/lib/brand";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-sans" });
