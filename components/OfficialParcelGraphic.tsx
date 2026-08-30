@@ -6,6 +6,7 @@ type Props = {
   location: { longitude: number; latitude: number };
   floodIntersects: boolean | null;
   buildingFootprints?: EsriPolygonGeometry[];
+  easementPolygons?: EsriPolygonGeometry[];
 };
 
 type Point = [number, number];
@@ -46,7 +47,13 @@ function pathFromRings(rings: Point[][]) {
     .join(" ");
 }
 
-export function OfficialParcelGraphic({ geometry, location, floodIntersects, buildingFootprints = [] }: Props) {
+export function OfficialParcelGraphic({
+  geometry,
+  location,
+  floodIntersects,
+  buildingFootprints = [],
+  easementPolygons = [],
+}: Props) {
   const normalized = normalizedRings(geometry);
   if (!normalized) return null;
 
@@ -54,12 +61,15 @@ export function OfficialParcelGraphic({ geometry, location, floodIntersects, bui
   const buildingPaths = buildingFootprints.map((building) =>
     pathFromRings(building.rings.map((ring) => ring.map((point) => normalized.project(point as Point)))),
   );
+  const easementPaths = easementPolygons.map((easement) =>
+    pathFromRings(easement.rings.map((ring) => ring.map((point) => normalized.project(point as Point)))),
+  );
   const [pinX, pinY] = normalized.project([location.longitude, location.latitude]);
 
   return (
     <div className={styles.wrap}>
       <div className={styles.graphic}>
-        <svg viewBox="0 0 100 100" role="img" aria-label="Official parcel boundary and mapped building footprints from City of Austin GIS">
+        <svg viewBox="0 0 100 100" role="img" aria-label="Official parcel boundary, mapped building footprints and mapped easements from City of Austin GIS">
           <defs>
             <pattern id="parcel-grid" width="5" height="5" patternUnits="userSpaceOnUse">
               <path d="M 5 0 L 0 0 0 5" fill="none" stroke="currentColor" strokeWidth="0.18" />
@@ -68,6 +78,9 @@ export function OfficialParcelGraphic({ geometry, location, floodIntersects, bui
           <rect x="0" y="0" width="100" height="100" className={styles.background} />
           <rect x="0" y="0" width="100" height="100" fill="url(#parcel-grid)" className={styles.grid} />
           <path d={path} className={styles.parcelFill} fillRule="evenodd" />
+          {easementPaths.map((easementPath, index) => (
+            <path key={`easement-${index}-${easementPath.slice(0, 18)}`} d={easementPath} className={styles.easement} fillRule="evenodd" />
+          ))}
           {buildingPaths.map((buildingPath, index) => (
             <path key={`${index}-${buildingPath.slice(0, 18)}`} d={buildingPath} className={styles.building} fillRule="evenodd" />
           ))}
@@ -76,12 +89,13 @@ export function OfficialParcelGraphic({ geometry, location, floodIntersects, bui
           <circle cx={pinX} cy={pinY} r="0.9" className={styles.pin} />
         </svg>
         <span className={styles.north}>N</span>
-        <span className={styles.source}>COA GIS · TCAD PARCEL + 2023 PLANIMETRICS</span>
+        <span className={styles.source}>COA GIS · PARCEL + 2023 PLANIMETRICS + EASEMENTS</span>
       </div>
 
       <div className={styles.legend}>
-        <div><i className={styles.parcelSwatch} /><span>Official parcel boundary</span></div>
+        <div><i className={styles.parcelSwatch} /><span>Official mapped parcel boundary</span></div>
         {buildingPaths.length > 0 && <div><i className={styles.buildingSwatch} /><span>{buildingPaths.length} mapped 2023 building footprint{buildingPaths.length === 1 ? "" : "s"}</span></div>}
+        {easementPaths.length > 0 && <div><i className={styles.easementSwatch} /><span>{easementPaths.length} mapped potentially active easement polygon{easementPaths.length === 1 ? "" : "s"}</span></div>}
         <div><i className={styles.pinSwatch} /><span>Matched address point</span></div>
         <div className={floodIntersects === true ? styles.warning : floodIntersects === false ? styles.clear : styles.unknown}>
           <i />
