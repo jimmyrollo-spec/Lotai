@@ -1,0 +1,25 @@
+name: Austin Permit Source Probe
+
+on:
+  push:
+    paths:
+      - '.github/workflows/austin-permit-probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fetch Austin permit sample
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const url = 'https://data.austintexas.gov/resource/d792-2sc3.json?$limit=1';
+          const response = await fetch(url, { headers: { Accept: 'application/json' } });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const rows = await response.json();
+          if (!Array.isArray(rows) || rows.length === 0) throw new Error('No permit rows returned');
+          console.log('FIELDS=' + JSON.stringify(Object.keys(rows[0]).sort()));
+          console.log('SAMPLE=' + JSON.stringify(rows[0]));
+          NODE
