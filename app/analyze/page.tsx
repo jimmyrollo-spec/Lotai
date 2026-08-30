@@ -7,7 +7,7 @@ import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
 import { lookupAustinProperty } from "@/lib/providers/austin";
-import { evaluateAustinGarageFacts, type AustinGarageIntendedUse } from "@/lib/rules/evaluate-austin-garage";
+import { evaluateAustinGarageFacts, type AustinGarageIntendedUse, type AustinGaragePlacement } from "@/lib/rules/evaluate-austin-garage";
 
 type AnalyzeSearchParams = {
   address?: string;
@@ -32,6 +32,11 @@ function normalizeIntendedUse(value?: string): AustinGarageIntendedUse {
   return "vehicle_storage";
 }
 
+function normalizePlacement(value?: string): AustinGaragePlacement {
+  if (value === "side" || value === "front" || value === "unsure") return value;
+  return "rear";
+}
+
 function floodLabel(value: boolean | null) {
   if (value === true) return "Mapped intersection";
   if (value === false) return "No mapped intersection";
@@ -40,7 +45,7 @@ function floodLabel(value: boolean | null) {
 
 const liveNextSteps = [
   "Confirm the proposed placement against a current survey, easements and any applicable overlays.",
-  "Resolve the remaining setback and building / impervious-cover checks for the exact project dimensions.",
+  "Calculate existing and proposed building / impervious cover against the parcel.",
   "Confirm the complete building and trade-permit path before construction or paid design work begins.",
 ];
 
@@ -58,6 +63,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   const stories = toPositiveNumber(params.stories);
   const plumbing = params.plumbing === "yes" || params.plumbing === "unsure" ? params.plumbing : "no";
   const intendedUse = normalizeIntendedUse(params.intendedUse);
+  const placement = normalizePlacement(params.location);
   const hasProjectDetails = Boolean(params.width || params.depth || params.height || params.location || params.plumbing || params.intendedUse);
 
   const liveRuleFacts = liveProperty && selectedProject.key === "garage" && hasProjectDetails
@@ -68,6 +74,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         stories,
         plumbing,
         intendedUse,
+        placement,
         baseZoning: liveProperty.zoning.baseDistrict || liveProperty.zoning.zoningType,
         floodIntersectsMappedFloodplain: liveProperty.flood.parcelIntersectsMappedFloodplain,
       })
