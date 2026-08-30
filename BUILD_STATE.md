@@ -40,38 +40,41 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - [x] Official City of Austin TCAD parcel spatial lookup added
 - [x] Official City of Austin zoning spatial lookup added
 - [x] Official City of Austin jurisdiction spatial lookup added
-- [x] Exact jurisdiction field mapping confirmed from the official layer schema (`CITY_NAME`, `JURISDICTION_LABEL`, `JURISDICTION_TYPE`)
+- [x] Exact jurisdiction field mapping confirmed from the official layer schema (`CITY_NAME`, `JURISDICTION_LABEL`, `JURISDICTION_TYPE`, `JURISDICTION_TYPE_SPECIFICS`)
 - [x] Source URLs stored alongside the provider output
 - [x] `/api/coverage/austin?address=...` diagnostic endpoint added
-- [x] Workspace can show a live Austin property match separately from prototype feasibility conclusions
+- [x] Workspace can show a live Austin property match separately from prototype/demo mode
 - [x] Normalized regulatory-rule type contract added
 - [x] First Austin detached-garage verified seed rule pack added under `data/rules/austin/`
-- [x] Project-detail workflow added for garage width, depth, height, stories, placement and plumbing
+- [x] Project-detail workflow added for garage width, depth, height, stories, placement, plumbing and intended use
 - [x] First source-backed Austin rule evaluator added
 - [x] Live regulatory facts panel added with direct source links
-- [x] Austin permit-exemption threshold logic implemented without converting it into an unsupported permit conclusion
+- [x] Austin permit-exemption threshold logic implemented without converting it into a blanket permit conclusion
+- [x] Permit-exemption dwelling-use condition now resolves from the stated project use instead of remaining silently unknown
 - [x] Austin qualifying SF-1/SF-2/SF-3 low-accessory rear-setback fact implemented
 - [x] 2026 garage-placement interpretation deliberately held at manual-review status
-- [x] Official parcel polygon now renders in the workspace when the Austin parcel layer returns geometry
+- [x] Official parcel polygon renders in the workspace when the Austin parcel layer returns geometry
 - [x] FEMA + fully-developed Austin floodplain layers queried against the full parcel polygon
-- [x] Parcel-level flood screening added to the live regulatory facts and property snapshot
+- [x] Parcel-level flood screening added to live regulatory facts and the property snapshot
+- [x] Official 2023 Austin building-footprint layer queried by parcel and rendered over the parcel geometry
+- [x] Official 2023 Austin impervious features queried as source evidence; no percentage is claimed before clipping/intersection math exists
+- [x] Live Austin properties no longer show a fake prototype feasibility verdict; overall verdict is explicitly withheld until material checks are complete
 - [x] Generic property-provider interface/registry added so future markets do not require an architecture rewrite
 - [x] Core PostgreSQL/PostGIS migration created for jurisdictions, parcels, zoning, spatial constraints, sources/rules and analysis evidence
 - [x] Database migration/privacy protocol documented under `db/`
-- [x] CI build verified after official parcel/flood UI integration
 - [ ] Validate multiple Austin addresses against the deployed endpoint in-browser
-- [ ] Provision the production PostgreSQL/PostGIS service and apply migrations in a non-production environment first
-- [ ] Add existing-building footprint data needed for real lot/building coverage calculations
+- [ ] Provision PostgreSQL/PostGIS and apply migrations in a non-production environment first
+- [ ] Calculate exact parcel/building/impervious geometry intersections for coverage checks
 - [ ] Add easement/overlay sources where reliable
-- [ ] Expand detached-garage rules for side/front setbacks, impervious/building cover, overlays and permit path
-- [ ] Replace the overall demo feasibility verdict with a source-backed Austin analysis only when material checks are complete
+- [ ] Expand detached-garage rules for side/front setbacks, cover limits, overlays and complete permit path
+- [ ] Replace verdict-withheld state with a source-backed overall Austin result only when the material-check gate is satisfied
 
 ### Explicitly NOT live yet
 - National address autocomplete/geocoding
 - Production parcel resolution outside the Austin proof integration
 - Full basemap/map provider
 - Complete detached-garage feasibility engine
-- Existing building footprint / impervious-cover calculation
+- Exact building / impervious-cover percentage calculation
 - Easement and full overlay analysis
 - Permit history
 - Real overall feasibility/confidence scoring
@@ -81,7 +84,7 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - Analytics
 - Professional dashboard
 
-`lib/demo-data.ts` still supplies the overall feasibility verdict and remaining demonstration checks. Successful Austin GIS matches, official parcel geometry, parcel-level flood screening and sections labeled `Live regulatory facts` are source-backed and intentionally separated from the demo verdict.
+`lib/demo-data.ts` remains only for the explicit sample/demo experience. Successful Austin GIS matches use source-backed property, parcel, zoning, building-footprint and flood facts. Live Austin results do not receive a demo feasibility verdict; the product withholds a verdict until the remaining material checks are implemented.
 
 ## Current V1 project priority
 
@@ -158,4 +161,5 @@ Before modifying code:
 - Dependency audit currently reports non-critical-to-Railway residual advisories; keep dependencies patched and review before adding auth/payments/customer data.
 - Direct municipal ArcGIS dependencies can change fields/endpoints; production ingestion needs provider contracts, monitoring, caching and graceful fallback.
 - Parcel-level flood intersection is not project-footprint-level flood determination; UI and rules must keep that distinction explicit.
+- 2023 planimetric building/impervious data is authoritative mapped evidence with a source vintage, not a substitute for a current survey.
 - Address searches must not be persisted by default until retention/deletion behavior is intentionally designed.
