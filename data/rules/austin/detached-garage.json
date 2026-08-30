@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "jurisdictionKey": "us-tx-austin",
+  "jurisdictionName": "City of Austin, Texas",
+  "projectType": "detached_garage",
+  "status": "verified_seed",
+  "verifiedAt": "2026-08-30",
+  "sources": [
+    {
+      "id": "austin-work-exempt-building-permits",
+      "title": "Work Exempt from Building Permits",
+      "authority": "City of Austin Development Services",
+      "url": "https://www.austintexas.gov/development-services/work-exempt-building-permits",
+      "locator": "Residential > Building - Residential > Item 1",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
+      "id": "austin-ldc-25-2-893",
+      "title": "Accessory Uses for a Principal Residential Use",
+      "authority": "City of Austin Land Development Code",
+      "url": "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART5ACUS",
+      "locator": "§ 25-2-893(B)(2)",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
+      "id": "austin-ldc-25-2-553-555",
+      "title": "SF-1, SF-2 and SF-3 District Regulations",
+      "authority": "City of Austin Land Development Code",
+      "url": "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART3ADRECEDI",
+      "locator": "§§ 25-2-553, 25-2-554, 25-2-555",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
+      "id": "austin-code-interpretations-2026-garage-placement",
+      "title": "Code Interpretations",
+      "authority": "City of Austin Development Services",
+      "url": "https://www.austintexas.gov/development-services/code-interpretations",
+      "locator": "CI2026-0001 - Parking Structure (Garage) Placement",
+      "effectiveDate": "2026-05-29",
+      "lastVerified": "2026-08-30"
+    }
+  ],
+  "rules": [
+    {
+      "id": "austin-garage-private-vehicle-storage",
+      "jurisdictionKey": "us-tx-austin",
+      "projectType": "detached_garage",
+      "category": "use",
+      "label": "Private residential garage use",
+      "explanation": "For a principal residential use, the code permits a private garage for storage of not more than four motor vehicles. This is a use rule, not a complete site-feasibility approval.",
+      "normalizedValue": 4,
+      "unit": "count",
+      "applicability": {
+        "projectTypes": ["detached_garage"],
+        "principalUses": ["residential"]
+      },
+      "sourceIds": ["austin-ldc-25-2-893"],
+      "confidence": "high",
+      "automation": "partial",
+      "unresolved": [
+        "Base zoning and site-specific overlays can add development standards.",
+        "Vehicle-storage use does not determine dimensional compliance or permit requirements."
+      ]
+    },
+    {
+      "id": "austin-detached-accessory-permit-exemption",
+      "jurisdictionKey": "us-tx-austin",
+      "projectType": "detached_garage",
+      "category": "permit",
+      "label": "Detached accessory structure building-permit exemption",
+      "explanation": "Austin lists a residential building-permit exemption for a one-story detached accessory structure only when it is no more than 200 square feet, no more than 15 feet high, creates no dwelling, contains no plumbing, and is not in a flood hazard area. The structure must still comply with applicable codes and ordinances.",
+      "normalizedValue": 200,
+      "unit": "sq_ft",
+      "applicability": {
+        "projectTypes": ["detached_garage"],
+        "maxAreaSqFt": 200,
+        "maxHeightFt": 15,
+        "maxStories": 1,
+        "requiresNoPlumbing": true,
+        "requiresNoDwellingUse": true,
+        "excludesFloodHazard": true
+      },
+      "sourceIds": ["austin-work-exempt-building-permits"],
+      "confidence": "high",
+      "automation": "eligible",
+      "unresolved": [
+        "Electrical, plumbing, floodplain or other approvals may still apply depending on project scope.",
+        "Failing the exemption conditions means this exemption does not apply; the full permit path must still be confirmed."
+      ]
+    },
+    {
+      "id": "austin-sf1-sf3-low-accessory-rear-setback",
+      "jurisdictionKey": "us-tx-austin",
+      "projectType": "detached_garage",
+      "category": "setback",
+      "label": "Rear setback for low accessory buildings in SF-1, SF-2 and SF-3",
+      "explanation": "For SF-1, SF-2 and SF-3 districts, the Land Development Code states a five-foot rear-yard setback for an accessory building that is not more than one story or 15 feet in height.",
+      "normalizedValue": 5,
+      "unit": "ft",
+      "applicability": {
+        "baseZoning": ["SF-1", "SF-2", "SF-3"],
+        "projectTypes": ["detached_garage"],
+        "maxHeightFt": 15,
+        "maxStories": 1
+      },
+      "sourceIds": ["austin-ldc-25-2-553-555"],
+      "confidence": "high",
+      "automation": "eligible",
+      "unresolved": [
+        "Easements, overlays, special area regulations and other site conditions can require additional review.",
+        "A taller or multi-story structure must be evaluated under the otherwise applicable regulations."
+      ]
+    },
+    {
+      "id": "austin-garage-placement-2026-review",
+      "jurisdictionKey": "us-tx-austin",
+      "projectType": "detached_garage",
+      "category": "placement",
+      "label": "Garage placement relative to the street-facing building façade",
+      "explanation": "Austin posted an updated 2026 code interpretation specifically addressing parking-structure (garage) placement. Until the interpretation is encoded and tested against the applicable residential-use scenario, this check must remain manual-review rather than an automated pass/fail conclusion.",
+      "normalizedValue": null,
+      "unit": null,
+      "applicability": {
+        "projectTypes": ["detached_garage"],
+        "notes": ["Review CI2026-0001 before producing a placement conclusion."]
+      },
+      "sourceIds": ["austin-code-interpretations-2026-garage-placement"],
+      "confidence": "review_required",
+      "automation": "manual_review",
+      "unresolved": [
+        "Exact applicability varies with residential use type, lot configuration, garage orientation and current code interpretation."
+      ]
+    }
+  ]
+}
