@@ -11,6 +11,11 @@ export type AustinGarageInputs = {
   placement: AustinGaragePlacement;
   baseZoning: string | null;
   floodIntersectsMappedFloodplain: boolean | null;
+  parcelAreaSqFt: number | null;
+  existingBuildingAreaSqFt: number | null;
+  existingBuildingCoveragePct: number | null;
+  existingImperviousAreaSqFt: number | null;
+  existingImperviousCoveragePct: number | null;
 };
 
 export type AustinGarageRuleFact = {
@@ -29,6 +34,7 @@ const SITE_DEVELOPMENT_URL = "https://library.municode.com/tx/austin/codes/land_
 const GARAGE_PLACEMENT_URL = "https://library.municode.com/tx/austin/codes/code_of_ordinances/469236?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART4ADRECEUS_DIV2COUS_S25-2-815LAREUS";
 const FLOODPLAIN_GUIDANCE_URL = "https://www.austintexas.gov/watershed-protection/programs/floodplain-management";
 const HOME_AMENDMENTS_URL = "https://www.austintexas.gov/development-services/home-amendments";
+const PLANIMETRICS_URL = "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer";
 
 const singleFamilyBaseStandards = {
   "SF-1": { front: 25, streetSide: 15, interiorSide: 5, rear: 10, buildingCover: 35, imperviousCover: 40 },
@@ -46,6 +52,15 @@ function exemptionUseState(intendedUse: AustinGarageIntendedUse) {
   if (intendedUse === "habitable") return "fails" as const;
   if (intendedUse === "vehicle_storage" || intendedUse === "workshop_storage") return "passes" as const;
   return "unresolved" as const;
+}
+
+function oneDecimal(value: number) {
+  return value.toFixed(1);
+}
+
+function projectedCoverage(existingAreaSqFt: number | null, proposedAreaSqFt: number | null, parcelAreaSqFt: number | null) {
+  if (existingAreaSqFt === null || proposedAreaSqFt === null || parcelAreaSqFt === null || parcelAreaSqFt <= 0) return null;
+  return ((existingAreaSqFt + proposedAreaSqFt) / parcelAreaSqFt) * 100;
 }
 
 export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGarageRuleFact[] {
@@ -97,25 +112,59 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
       sourceUrl: SITE_DEVELOPMENT_URL,
     });
 
-    facts.push({
-      id: "base-building-cover-limit",
-      label: `${baseZoning} maximum building coverage`,
-      value: `${baseStandards.buildingCover}% · current site percentage pending`,
-      tone: "neutral",
-      explanation: `The current base-district table lists a maximum building coverage of ${baseStandards.buildingCover}% for ${baseZoning}. The City states garages and carports continue to count toward building coverage. We are not comparing the proposed garage to this limit until existing mapped structures are clipped and measured against the parcel geometry.`,
-      sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
-      sourceUrl: HOME_AMENDMENTS_URL,
-    });
+    const projectedBuildingCoverage = projectedCoverage(inputs.existingBuildingAreaSqFt, area, inputs.parcelAreaSqFt);
+    if (inputs.existingBuildingCoveragePct !== null) {
+      const projectedIsOver = projectedBuildingCoverage !== null && projectedBuildingCoverage > baseStandards.buildingCover;
+      facts.push({
+        id: "mapped-building-cover",
+        label: `${baseZoning} mapped building-coverage check`,
+        value: projectedBuildingCoverage === null
+          ? `${oneDecimal(inputs.existingBuildingCoveragePct)}% mapped existing · ${baseStandards.buildingCover}% base limit`
+          : `${oneDecimal(inputs.existingBuildingCoveragePct)}% existing → ${oneDecimal(projectedBuildingCoverage)}% with proposed footprint · ${baseStandards.buildingCover}% base limit`,
+        tone: projectedBuildingCoverage === null ? "neutral" : projectedIsOver ? "warning" : "positive",
+        explanation: projectedBuildingCoverage === null
+          ? `The 2023 Austin building-footprint layer, clipped to the mapped parcel and measured by the City GeometryServer, indicates approximately ${oneDecimal(inputs.existingBuildingCoveragePct)}% mapped building footprint. The project footprint is not complete enough to add a scenario yet. This is a derived screening metric, not a survey or official development-review calculation.`
+          : `The 2023 Austin building-footprint layer indicates approximately ${oneDecimal(inputs.existingBuildingCoveragePct)}% mapped existing building footprint. Adding the proposed ${Math.round(area ?? 0).toLocaleString()} sq ft detached-garage footprint produces a mapped-footprint scenario of approximately ${oneDecimal(projectedBuildingCoverage)}%. ${projectedIsOver ? "That exceeds the base-district percentage and is a material constraint requiring confirmation." : "That remains below the base-district percentage in this mapped screening calculation."} Regulatory building-cover definitions, source vintage, demolitions and survey geometry can change the official result.`,
+        sourceLabel: "Austin LDC § 25-2-492 + 2023 Building Footprints",
+        sourceUrl: PLANIMETRICS_URL,
+      });
+    } else {
+      facts.push({
+        id: "base-building-cover-limit",
+        label: `${baseZoning} maximum building coverage`,
+        value: `${baseStandards.buildingCover}% · mapped site percentage unavailable`,
+        tone: "neutral",
+        explanation: `The current base-district table lists a maximum building coverage of ${baseStandards.buildingCover}% for ${baseZoning}. Austin states garages and carports continue to count toward building coverage. The mapped coverage calculation was unavailable, so the limit remains unresolved rather than estimated.`,
+        sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
+        sourceUrl: HOME_AMENDMENTS_URL,
+      });
+    }
 
-    facts.push({
-      id: "base-impervious-cover-limit",
-      label: `${baseZoning} maximum impervious cover`,
-      value: `${baseStandards.imperviousCover}% · current site percentage pending`,
-      tone: "neutral",
-      explanation: `The current base-district table lists a maximum impervious cover of ${baseStandards.imperviousCover}% for ${baseZoning}. Austin's current HOME guidance confirms garages and carports count toward impervious cover. The live provider has mapped impervious features, but the percentage is deliberately withheld until geometry is clipped to the parcel and measured correctly.`,
-      sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
-      sourceUrl: HOME_AMENDMENTS_URL,
-    });
+    if (inputs.existingImperviousCoveragePct !== null) {
+      const fullyNewScenario = projectedCoverage(inputs.existingImperviousAreaSqFt, area, inputs.parcelAreaSqFt);
+      const existingIsOver = inputs.existingImperviousCoveragePct > baseStandards.imperviousCover;
+      facts.push({
+        id: "mapped-impervious-cover",
+        label: `${baseZoning} mapped impervious-cover screening`,
+        value: fullyNewScenario === null
+          ? `${oneDecimal(inputs.existingImperviousCoveragePct)}% mapped existing · ${baseStandards.imperviousCover}% base limit`
+          : `${oneDecimal(inputs.existingImperviousCoveragePct)}% existing · up to ${oneDecimal(fullyNewScenario)}% if footprint is entirely new impervious · ${baseStandards.imperviousCover}% base limit`,
+        tone: existingIsOver ? "warning" : "neutral",
+        explanation: `Austin's 2023 impervious-cover polygons, clipped and unioned within the mapped parcel, indicate approximately ${oneDecimal(inputs.existingImperviousCoveragePct)}% mapped impervious cover. ${fullyNewScenario !== null ? `If every square foot of the proposed garage footprint were new impervious area, the screening scenario would be approximately ${oneDecimal(fullyNewScenario)}%. The actual increase can be lower where the garage overlaps an existing driveway or other mapped impervious area, so this is not yet a project pass/fail.` : "The project footprint is not complete enough to calculate a scenario."} Source vintage and regulatory definitions still require confirmation.`,
+        sourceLabel: "Austin LDC § 25-2-492 + 2023 Impervious Cover",
+        sourceUrl: PLANIMETRICS_URL,
+      });
+    } else {
+      facts.push({
+        id: "base-impervious-cover-limit",
+        label: `${baseZoning} maximum impervious cover`,
+        value: `${baseStandards.imperviousCover}% · mapped site percentage unavailable`,
+        tone: "neutral",
+        explanation: `The current base-district table lists a maximum impervious cover of ${baseStandards.imperviousCover}% for ${baseZoning}. Austin's current HOME guidance confirms garages and carports count toward impervious cover. The mapped site percentage could not be calculated, so it remains unresolved.`,
+        sourceLabel: "Austin LDC § 25-2-492 + HOME Amendments",
+        sourceUrl: HOME_AMENDMENTS_URL,
+      });
+    }
   }
 
   if (area !== null) {
