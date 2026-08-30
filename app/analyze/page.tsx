@@ -45,9 +45,19 @@ function floodLabel(value: boolean | null) {
   return "Unavailable";
 }
 
+function areaLabel(value: number | null) {
+  if (value === null) return "Unavailable";
+  return `${Math.round(value).toLocaleString()} sq ft`;
+}
+
+function percentLabel(value: number | null) {
+  if (value === null) return "Unavailable";
+  return `${value.toFixed(1)}% mapped`;
+}
+
 const liveNextSteps = [
-  "Confirm the proposed placement against a current survey, easements and any applicable overlays.",
-  "Calculate existing and proposed building / impervious cover against the parcel.",
+  "Resolve the exact garage placement against the front lot line, existing façade, setbacks, easements and applicable overlays.",
+  "Measure the proposed footprint against existing impervious surfaces so the final project impervious-cover change can be calculated.",
   "Confirm the complete building and trade-permit path before construction or paid design work begins.",
 ];
 
@@ -79,6 +89,11 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         placement,
         baseZoning: liveProperty.zoning.baseDistrict || liveProperty.zoning.zoningType,
         floodIntersectsMappedFloodplain: liveProperty.flood.parcelIntersectsMappedFloodplain,
+        parcelAreaSqFt: liveProperty.parcel.areaSqFt,
+        existingBuildingAreaSqFt: liveProperty.structures.existingBuildingAreaSqFt,
+        existingBuildingCoveragePct: liveProperty.structures.existingBuildingCoveragePct,
+        existingImperviousAreaSqFt: liveProperty.impervious.existingImperviousAreaSqFt,
+        existingImperviousCoveragePct: liveProperty.impervious.existingImperviousCoveragePct,
       })
     : [];
 
@@ -117,7 +132,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <strong>{liveProperty ? "Source-backed beta · no overall verdict yet" : "Prototype mode"}</strong>
           <span>
             {liveProperty
-              ? "The property match, parcel boundary, mapped building footprints, flood screening, permit history and Live regulatory facts are source-backed Austin data. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
+              ? "The property match, parcel boundary, parcel area, mapped building and impervious coverage, flood screening, permit history and Live regulatory facts are source-backed Austin data or derived from those mapped sources. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -137,8 +152,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
               <strong>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Not returned"}</strong>
             </div>
             <div className="live-property-card__fact">
-              <span>Parcel ID</span>
-              <strong>{liveProperty.parcel.parcelId || "Not returned"}</strong>
+              <span>Parcel area</span>
+              <strong>{areaLabel(liveProperty.parcel.areaSqFt)}</strong>
             </div>
             <div className="live-property-card__fact">
               <span>Jurisdiction</span>
@@ -203,7 +218,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   buildingFootprints={liveProperty.structures.buildingFootprints}
                 />
                 <p className="map-disclaimer">
-                  Parcel geometry comes from the City of Austin TCAD parcel layer. Building footprints come from the City&apos;s 2023 planimetric survey. Flood screening tests the full parcel against the City FEMA and fully-developed floodplain layers. None of these layers alone establish a legal survey boundary or proposed-project placement.
+                  Parcel geometry comes from the City of Austin TCAD parcel layer. Building footprints and impervious polygons come from the City&apos;s 2023 planimetric survey. Coverage areas are clipped to the mapped parcel, unioned to avoid overlap and measured geodesically through the City GeometryServer. These remain mapped screening calculations, not a legal survey or development-review determination.
                 </p>
               </article>
             ) : !liveProperty ? (
@@ -284,15 +299,16 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
           <aside className="results-aside">
             <article className="aside-card aside-card--property">
-              <div className="card-kicker">{liveProperty ? "Official property snapshot" : "Prototype property snapshot"}</div>
+              <div className="card-kicker">{liveProperty ? "Official / derived property snapshot" : "Prototype property snapshot"}</div>
               {liveProperty ? (
                 <dl className="property-facts">
                   <div><dt>Parcel ID</dt><dd>{liveProperty.parcel.parcelId || "Unavailable"}</dd></div>
-                  <div><dt>Property ID</dt><dd>{liveProperty.parcel.propertyId || "Unavailable"}</dd></div>
+                  <div><dt>Lot area</dt><dd>{areaLabel(liveProperty.parcel.areaSqFt)}</dd></div>
                   <div><dt>Zoning</dt><dd>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Unavailable"}</dd></div>
                   <div><dt>Jurisdiction</dt><dd>{jurisdictionDisplay}</dd></div>
-                  <div><dt>Mapped buildings</dt><dd>{liveProperty.structures.buildingCount} · 2023</dd></div>
-                  <div><dt>Impervious features</dt><dd>{liveProperty.impervious.featureCount} detected · no % yet</dd></div>
+                  <div><dt>Mapped buildings</dt><dd>{liveProperty.structures.buildingCount} · {areaLabel(liveProperty.structures.existingBuildingAreaSqFt)}</dd></div>
+                  <div><dt>Building coverage</dt><dd>{percentLabel(liveProperty.structures.existingBuildingCoveragePct)}</dd></div>
+                  <div><dt>Impervious coverage</dt><dd>{percentLabel(liveProperty.impervious.existingImperviousCoveragePct)}</dd></div>
                   <div><dt>Flood scan</dt><dd>{floodLabel(liveProperty.flood.parcelIntersectsMappedFloodplain)}</dd></div>
                   <div><dt>Permit history</dt><dd>{liveProperty.parcel.parcelId ? "TCAD-matched · live" : "Unavailable"}</dd></div>
                   <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
