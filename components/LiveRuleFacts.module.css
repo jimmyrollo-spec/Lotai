@@ -1,0 +1,140 @@
+.card {
+  overflow: hidden;
+  border: 1px solid #cbdad7;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(8, 24, 39, .05);
+}
+
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid #e4ece9;
+  background: #f4faf8;
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #0c8f70;
+  font-family: var(--font-mono), monospace;
+  font-size: .58rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.header h3 {
+  margin: 0;
+  color: #07111c;
+  font-size: 1rem;
+  letter-spacing: -.02em;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid rgba(24,199,154,.22);
+  border-radius: 999px;
+  color: #0c8f70;
+  background: #dbf8ef;
+  font-family: var(--font-mono), monospace;
+  font-size: .55rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.list {
+  display: grid;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) minmax(150px, .48fr);
+  gap: 13px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #91a0af;
+}
+
+.positive { background: #18c79a; }
+.warning { background: #d8922d; }
+.neutral { background: #91a0af; }
+
+.copy strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #07111c;
+  font-size: .78rem;
+}
+
+.copy p {
+  margin: 0;
+  color: #516477;
+  font-size: .7rem;
+  line-height: 1.6;
+}
+
+.evidence {
+  align-self: start;
+  text-align: right;
+}
+
+.evidence strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #20344a;
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.evidence a {
+  color: #0c8f70;
+  font-size: .65rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer {
+  padding: 12px 22px;
+  border-top: 1px solid #e4ece9;
+  color: #6d7f90;
+  background: #fbfcfb;
+  font-size: .65rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 650px) {
+  .header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .row {
+    grid-template-columns: 9px 1fr;
+    padding-inline: 16px;
+  }
+
+  .evidence {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .footer {
+    padding-inline: 16px;
+  }
+}
