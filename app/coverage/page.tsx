@@ -37,7 +37,7 @@ export default function CoveragePage() {
               <table className="method-table">
                 <thead><tr><th>Market</th><th>Property data</th><th>Project rules</th><th>Feasibility</th></tr></thead>
                 <tbody>
-                  <tr><td>Austin, TX</td><td>Live beta</td><td>Verified seed — garage</td><td>Prototype</td></tr>
+                  <tr><td>Austin, TX</td><td>Live beta + parcel/flood screening</td><td>Verified seed — garage</td><td>Prototype overall verdict</td></tr>
                   <tr><td>Other U.S. markets</td><td>Not yet supported</td><td>Not yet supported</td><td>Not yet supported</td></tr>
                 </tbody>
               </table>
@@ -46,14 +46,18 @@ export default function CoveragePage() {
             <section id="austin">
               <h2>2. Austin live-data beta</h2>
               <p>
-                An Austin address can now be matched through the City of Austin address locator. The system then performs spatial queries against official City GIS layers for appraisal parcels, zoning and jurisdiction. These property facts are kept separate from the prototype feasibility rule set.
+                An Austin address can be matched through the City of Austin address locator. The system then performs spatial queries against official City GIS layers for appraisal parcels, zoning, jurisdiction and mapped floodplain intersections. These property facts are kept separate from the prototype overall feasibility verdict.
               </p>
               <ul>
                 <li>Official address match and match score</li>
-                <li>TCAD parcel identifier when returned by the mapped parcel layer</li>
+                <li>TCAD parcel identifier and official parcel polygon when returned</li>
                 <li>Mapped zoning classification when returned by the zoning layer</li>
-                <li>Mapped jurisdiction when returned by the jurisdiction layer</li>
+                <li>Mapped jurisdiction label, city and jurisdiction type</li>
+                <li>Parcel-level intersection screening against FEMA and fully-developed Austin floodplain layers</li>
               </ul>
+              <p>
+                Flood screening is intentionally parcel-level. A parcel intersection does not mean a proposed garage footprint is necessarily inside a regulated area, and a non-intersection does not replace survey or City review where otherwise required.
+              </p>
               <p>
                 <Link className="text-link" href="/#analyze">Try an Austin property <span>→</span></Link>
               </p>
@@ -62,12 +66,12 @@ export default function CoveragePage() {
             <section id="projects">
               <h2>3. Project-rule coverage</h2>
               <p>
-                Detached garage / workshop is the first rule module. The initial Austin rule pack records current sources for residential accessory-garage use, the detached-accessory-structure building-permit exemption, the five-foot rear-setback exception for qualifying low accessory buildings in SF-1/SF-2/SF-3, and a 2026 garage-placement interpretation that remains flagged for manual review.
+                Detached garage / workshop is the first rule module. The initial Austin rule pack records current sources for residential accessory-garage use, the detached-accessory-structure building-permit exemption, the five-foot rear-setback exception for qualifying low accessory buildings in SF-1/SF-2/SF-3, parcel-level mapped flood screening, and a 2026 garage-placement interpretation that remains flagged for manual review.
               </p>
               <table className="method-table">
                 <thead><tr><th>Project</th><th>Austin rule status</th><th>Automation status</th></tr></thead>
                 <tbody>
-                  <tr><td>Detached garage / workshop</td><td>Seed rules verified</td><td>Partial — not yet a live verdict</td></tr>
+                  <tr><td>Detached garage / workshop</td><td>Seed rules verified</td><td>Partial — source-backed facts, no final verdict yet</td></tr>
                   <tr><td>Deck</td><td>Research pending</td><td>Not live</td></tr>
                   <tr><td>Shed / accessory structure</td><td>Research pending</td><td>Not live</td></tr>
                   <tr><td>Pool</td><td>Research pending</td><td>Not live</td></tr>
@@ -85,6 +89,9 @@ export default function CoveragePage() {
                 <li><a className="text-link" href={austinSourceLinks.parcels} target="_blank" rel="noreferrer">City of Austin appraisal parcel layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.zoning} target="_blank" rel="noreferrer">City of Austin zoning layer ↗</a></li>
                 <li><a className="text-link" href={austinSourceLinks.jurisdiction} target="_blank" rel="noreferrer">City of Austin jurisdiction layer ↗</a></li>
+                <li><a className="text-link" href={austinSourceLinks.femaFloodplain} target="_blank" rel="noreferrer">City of Austin FEMA floodplain layer ↗</a></li>
+                <li><a className="text-link" href={austinSourceLinks.fullyDevelopedFloodplain} target="_blank" rel="noreferrer">City of Austin fully-developed floodplain layer ↗</a></li>
+                <li><a className="text-link" href={austinSourceLinks.floodplainGuidance} target="_blank" rel="noreferrer">City of Austin Floodplain Management guidance ↗</a></li>
               </ul>
             </section>
 
