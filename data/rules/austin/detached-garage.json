@@ -25,11 +25,38 @@
       "lastVerified": "2026-08-30"
     },
     {
+      "id": "austin-ldc-25-2-492",
+      "title": "Site Development Regulations",
+      "authority": "City of Austin Land Development Code",
+      "url": "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART2PRUSDERE_DIV1RETA_S25-2-492SIDERE",
+      "locator": "§ 25-2-492(D) site development regulation table",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
       "id": "austin-ldc-25-2-553-555",
       "title": "SF-1, SF-2 and SF-3 District Regulations",
       "authority": "City of Austin Land Development Code",
       "url": "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART3ADRECEDI",
       "locator": "§§ 25-2-553, 25-2-554, 25-2-555",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
+      "id": "austin-home-amendments",
+      "title": "HOME Amendments",
+      "authority": "City of Austin Development Services",
+      "url": "https://www.austintexas.gov/development-services/home-amendments",
+      "locator": "Impervious Cover and Building Coverage Limits",
+      "effectiveDate": null,
+      "lastVerified": "2026-08-30"
+    },
+    {
+      "id": "austin-garage-placement-code",
+      "title": "Garage Placement",
+      "authority": "City of Austin Land Development Code",
+      "url": "https://library.municode.com/tx/austin/codes/code_of_ordinances/469236?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART4ADRECEUS_DIV2COUS_S25-2-815LAREUS",
+      "locator": "Garage Placement subdivision",
       "effectiveDate": null,
       "lastVerified": "2026-08-30"
     },
@@ -63,6 +90,32 @@
       "unresolved": [
         "Base zoning and site-specific overlays can add development standards.",
         "Vehicle-storage use does not determine dimensional compliance or permit requirements."
+      ]
+    },
+    {
+      "id": "austin-sf1-sf3-base-site-standards",
+      "jurisdictionKey": "us-tx-austin",
+      "projectType": "detached_garage",
+      "category": "site_development",
+      "label": "Base site-development standards for SF-1, SF-2 and SF-3",
+      "explanation": "Austin's current site-development table lists the base front, street-side, interior-side and rear setbacks plus building and impervious-cover limits for each zoning district. More specific rules can supersede a base value.",
+      "normalizedValue": {
+        "SF-1": { "frontSetbackFt": 25, "streetSideSetbackFt": 15, "interiorSideSetbackFt": 5, "rearSetbackFt": 10, "maxBuildingCoverPct": 35, "maxImperviousCoverPct": 40 },
+        "SF-2": { "frontSetbackFt": 25, "streetSideSetbackFt": 15, "interiorSideSetbackFt": 5, "rearSetbackFt": 10, "maxBuildingCoverPct": 40, "maxImperviousCoverPct": 45 },
+        "SF-3": { "frontSetbackFt": 25, "streetSideSetbackFt": 15, "interiorSideSetbackFt": 5, "rearSetbackFt": 10, "maxBuildingCoverPct": 40, "maxImperviousCoverPct": 45 }
+      },
+      "unit": "mixed",
+      "applicability": {
+        "baseZoning": ["SF-1", "SF-2", "SF-3"],
+        "projectTypes": ["detached_garage"]
+      },
+      "sourceIds": ["austin-ldc-25-2-492", "austin-home-amendments"],
+      "confidence": "high",
+      "automation": "partial",
+      "unresolved": [
+        "A more specific use/district rule, overlay or site condition may supersede a base standard.",
+        "The current property building/impervious percentages require clipped spatial calculations before comparison.",
+        "Garages and carports count toward building and impervious cover under current City guidance."
       ]
     },
     {
@@ -115,23 +168,27 @@
       ]
     },
     {
-      "id": "austin-garage-placement-2026-review",
+      "id": "austin-garage-placement-2026",
       "jurisdictionKey": "us-tx-austin",
       "projectType": "detached_garage",
       "category": "placement",
-      "label": "Garage placement relative to the street-facing building façade",
-      "explanation": "Austin posted an updated 2026 code interpretation specifically addressing parking-structure (garage) placement. Until the interpretation is encoded and tested against the applicable residential-use scenario, this check must remain manual-review rather than an automated pass/fail conclusion.",
-      "normalizedValue": null,
-      "unit": null,
+      "label": "Garage placement relative to the front lot line and building façade",
+      "explanation": "Austin's garage-placement rule says a parking structure may not be closer to the front lot line than the front-most exterior wall of the first-floor building façade. A second width condition applies when a garage entrance faces a front yard abutting public right-of-way and the parking structure is less than 20 feet behind the building façade. The City posted an updated interpretation in 2026.",
+      "normalizedValue": {
+        "mayNotProjectAheadOfFrontFacade": true,
+        "frontFacingEntranceWidthConditionWithinFtBehindFacade": 20
+      },
+      "unit": "mixed",
       "applicability": {
         "projectTypes": ["detached_garage"],
-        "notes": ["Review CI2026-0001 before producing a placement conclusion."]
+        "requiresGeometry": ["frontLotLine", "frontMostFirstFloorFacade", "garageFootprint", "garageEntranceOrientation"]
       },
-      "sourceIds": ["austin-code-interpretations-2026-garage-placement"],
-      "confidence": "review_required",
-      "automation": "manual_review",
+      "sourceIds": ["austin-garage-placement-code", "austin-code-interpretations-2026-garage-placement"],
+      "confidence": "high_rule_medium_application",
+      "automation": "blocked_on_geometry",
       "unresolved": [
-        "Exact applicability varies with residential use type, lot configuration, garage orientation and current code interpretation."
+        "The beta does not yet derive the front lot line, front-most first-floor façade or garage entrance orientation from authoritative geometry.",
+        "Neighborhood-plan or other combining-district conditions may require additional applicability review."
       ]
     }
   ]
