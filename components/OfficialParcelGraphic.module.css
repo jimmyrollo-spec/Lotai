@@ -28,6 +28,13 @@
 .background { fill: rgba(255, 255, 255, 0.36); }
 .grid { opacity: 0.55; }
 .parcelFill { fill: rgba(24, 199, 154, 0.16); }
+.easement {
+  fill: rgba(216, 146, 45, 0.17);
+  stroke: #a96a15;
+  stroke-width: 0.85;
+  stroke-dasharray: 2.2 1.5;
+  vector-effect: non-scaling-stroke;
+}
 .building {
   fill: #20344a;
   fill-opacity: 0.78;
@@ -104,6 +111,11 @@
 .buildingSwatch {
   background: #20344a;
   border: 1px solid #07111c;
+}
+
+.easementSwatch {
+  background: rgba(216, 146, 45, 0.2);
+  border: 1px dashed #a96a15;
 }
 
 .pinSwatch {
