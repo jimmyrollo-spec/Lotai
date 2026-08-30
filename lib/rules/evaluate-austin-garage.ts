@@ -5,6 +5,7 @@ export type AustinGarageInputs = {
   stories: number | null;
   plumbing: "yes" | "no" | "unsure";
   baseZoning: string | null;
+  floodIntersectsMappedFloodplain: boolean | null;
 };
 
 export type AustinGarageRuleFact = {
@@ -20,6 +21,7 @@ export type AustinGarageRuleFact = {
 const WORK_EXEMPT_URL = "https://www.austintexas.gov/development-services/work-exempt-building-permits";
 const DISTRICT_RULES_URL = "https://library.municode.com/tx/austin/codes/land_development_code?nodeId=TIT25LADE_CH25-2ZO_SUBCHAPTER_CUSDERE_ART3ADRECEDI";
 const GARAGE_INTERPRETATIONS_URL = "https://www.austintexas.gov/development-services/code-interpretations";
+const FLOODPLAIN_GUIDANCE_URL = "https://www.austintexas.gov/watershed-protection/programs/floodplain-management";
 
 function cleanBaseZoning(value: string | null) {
   if (!value) return null;
@@ -31,6 +33,38 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
   const facts: AustinGarageRuleFact[] = [];
   const area = inputs.widthFt && inputs.depthFt ? inputs.widthFt * inputs.depthFt : null;
   const baseZoning = cleanBaseZoning(inputs.baseZoning);
+
+  if (inputs.floodIntersectsMappedFloodplain === true) {
+    facts.push({
+      id: "parcel-floodplain-intersection",
+      label: "Mapped floodplain intersection",
+      value: "Parcel intersection detected",
+      tone: "warning",
+      explanation: "The official City of Austin floodplain query intersects the parcel polygon. This is a parcel-level screening result, not proof that the proposed garage footprint is inside the floodplain. Exact placement and floodplain requirements need review before using any small-structure permit exemption or making a siting decision.",
+      sourceLabel: "City of Austin · Floodplain Management / GIS",
+      sourceUrl: FLOODPLAIN_GUIDANCE_URL,
+    });
+  } else if (inputs.floodIntersectsMappedFloodplain === false) {
+    facts.push({
+      id: "parcel-floodplain-intersection",
+      label: "Mapped floodplain intersection",
+      value: "No parcel intersection detected",
+      tone: "positive",
+      explanation: "The parcel polygon did not intersect the City of Austin FEMA or fully-developed floodplain layers queried by this beta check. This supports the mapped-floodplain condition of the small-structure exemption, but it does not replace a survey, elevation determination or City review where otherwise required.",
+      sourceLabel: "City of Austin · Floodplain Management / GIS",
+      sourceUrl: FLOODPLAIN_GUIDANCE_URL,
+    });
+  } else {
+    facts.push({
+      id: "parcel-floodplain-intersection",
+      label: "Mapped floodplain intersection",
+      value: "Not resolved",
+      tone: "neutral",
+      explanation: "The parcel geometry or floodplain query was not available, so the flood-hazard condition remains unresolved rather than being assumed clear.",
+      sourceLabel: "City of Austin · Floodplain Management / GIS",
+      sourceUrl: FLOODPLAIN_GUIDANCE_URL,
+    });
+  }
 
   if (area !== null) {
     if (area > 200) {
@@ -47,14 +81,20 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
       const knownHeightPass = inputs.heightFt !== null && inputs.heightFt <= 15;
       const knownStoryPass = inputs.stories !== null && inputs.stories <= 1;
       const knownPlumbingPass = inputs.plumbing === "no";
-      const knownConditionsPass = knownHeightPass && knownStoryPass && knownPlumbingPass;
+      const knownFloodPass = inputs.floodIntersectsMappedFloodplain === false;
+      const floodFails = inputs.floodIntersectsMappedFloodplain === true;
+      const knownConditionsPass = knownHeightPass && knownStoryPass && knownPlumbingPass && knownFloodPass;
 
       facts.push({
         id: "permit-exemption-area",
         label: "Small detached-structure permit exemption",
-        value: knownConditionsPass ? "Potentially eligible · flood status still needed" : "Additional exemption conditions unresolved",
-        tone: knownConditionsPass ? "warning" : "neutral",
-        explanation: "Austin lists an exemption for qualifying one-story detached accessory structures no larger than 200 sq ft and 15 ft high, with no dwelling use or plumbing, and outside a flood hazard area. We will not mark this exempt until every condition is resolved.",
+        value: floodFails
+          ? "Mapped floodplain condition not satisfied at parcel-screening level"
+          : knownConditionsPass
+            ? "Several listed conditions appear satisfied · dwelling use still must be confirmed"
+            : "Additional exemption conditions unresolved",
+        tone: floodFails || knownConditionsPass ? "warning" : "neutral",
+        explanation: "Austin lists an exemption for qualifying one-story detached accessory structures no larger than 200 sq ft and 15 ft high, with no dwelling use or plumbing, and outside a flood hazard area. This beta check resolves only conditions supported by the project inputs and mapped parcel/flood data; it does not mark a structure permit-exempt until every condition is confirmed.",
         sourceLabel: "City of Austin · Work Exempt from Building Permits",
         sourceUrl: WORK_EXEMPT_URL,
       });
