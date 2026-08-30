@@ -40,6 +40,7 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - [x] Official City of Austin TCAD parcel spatial lookup added
 - [x] Official City of Austin zoning spatial lookup added
 - [x] Official City of Austin jurisdiction spatial lookup added
+- [x] Exact jurisdiction field mapping confirmed from the official layer schema (`CITY_NAME`, `JURISDICTION_LABEL`, `JURISDICTION_TYPE`)
 - [x] Source URLs stored alongside the provider output
 - [x] `/api/coverage/austin?address=...` diagnostic endpoint added
 - [x] Workspace can show a live Austin property match separately from prototype feasibility conclusions
@@ -51,21 +52,27 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - [x] Austin permit-exemption threshold logic implemented without converting it into an unsupported permit conclusion
 - [x] Austin qualifying SF-1/SF-2/SF-3 low-accessory rear-setback fact implemented
 - [x] 2026 garage-placement interpretation deliberately held at manual-review status
-- [x] CI build verified after live rule-fact integration
-- [x] Railway deployment verified after live rule-fact integration
+- [x] Official parcel polygon now renders in the workspace when the Austin parcel layer returns geometry
+- [x] FEMA + fully-developed Austin floodplain layers queried against the full parcel polygon
+- [x] Parcel-level flood screening added to the live regulatory facts and property snapshot
+- [x] Generic property-provider interface/registry added so future markets do not require an architecture rewrite
+- [x] Core PostgreSQL/PostGIS migration created for jurisdictions, parcels, zoning, spatial constraints, sources/rules and analysis evidence
+- [x] Database migration/privacy protocol documented under `db/`
+- [x] CI build verified after official parcel/flood UI integration
 - [ ] Validate multiple Austin addresses against the deployed endpoint in-browser
-- [ ] Confirm exact jurisdiction field mapping from returned GIS attributes
-- [ ] Render authoritative parcel polygon on the workspace map
-- [ ] Add flood-hazard lookup so the small-structure exemption can resolve that condition
-- [ ] Add Postgres/PostGIS schema and migrations
-- [ ] Expand detached-garage rules for side/front setbacks, impervious cover, overlays and permit path
+- [ ] Provision the production PostgreSQL/PostGIS service and apply migrations in a non-production environment first
+- [ ] Add existing-building footprint data needed for real lot/building coverage calculations
+- [ ] Add easement/overlay sources where reliable
+- [ ] Expand detached-garage rules for side/front setbacks, impervious/building cover, overlays and permit path
 - [ ] Replace the overall demo feasibility verdict with a source-backed Austin analysis only when material checks are complete
 
 ### Explicitly NOT live yet
 - National address autocomplete/geocoding
 - Production parcel resolution outside the Austin proof integration
-- Production map provider
+- Full basemap/map provider
 - Complete detached-garage feasibility engine
+- Existing building footprint / impervious-cover calculation
+- Easement and full overlay analysis
 - Permit history
 - Real overall feasibility/confidence scoring
 - Authentication
@@ -74,7 +81,7 @@ Phase 1 established the visual/product contract. Phase 1.1 tightened the live he
 - Analytics
 - Professional dashboard
 
-`lib/demo-data.ts` still supplies the overall feasibility verdict and remaining demonstration checks. Successful Austin GIS matches and sections labeled `Live regulatory facts` are source-backed and intentionally separated from the demo verdict.
+`lib/demo-data.ts` still supplies the overall feasibility verdict and remaining demonstration checks. Successful Austin GIS matches, official parcel geometry, parcel-level flood screening and sections labeled `Live regulatory facts` are source-backed and intentionally separated from the demo verdict.
 
 ## Current V1 project priority
 
@@ -150,3 +157,5 @@ Before modifying code:
 - Spatial precision can visually overstate certainty; map UX must disclose source/precision.
 - Dependency audit currently reports non-critical-to-Railway residual advisories; keep dependencies patched and review before adding auth/payments/customer data.
 - Direct municipal ArcGIS dependencies can change fields/endpoints; production ingestion needs provider contracts, monitoring, caching and graceful fallback.
+- Parcel-level flood intersection is not project-footprint-level flood determination; UI and rules must keep that distinction explicit.
+- Address searches must not be persisted by default until retention/deletion behavior is intentionally designed.
