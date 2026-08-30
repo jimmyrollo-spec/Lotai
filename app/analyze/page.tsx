@@ -2,11 +2,15 @@ import Link from "next/link";
 import { AddressProjectForm } from "@/components/AddressProjectForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
+import { lookupAustinProperty } from "@/lib/providers/austin";
 
 export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ address?: string; project?: string }> }) {
   const params = await searchParams;
   const address = params.address || "Sample property";
   const selectedProject = projectDefinitions.find((item) => item.key === params.project) ?? projectDefinitions[0];
+  const liveProperty = address !== "Sample property"
+    ? await lookupAustinProperty(address).catch(() => null)
+    : null;
 
   return (
     <main className="workspace-page">
@@ -21,8 +25,10 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         <div className="workspace-header">
           <div>
             <Link href="/" className="back-link">← Back to overview</Link>
-            <span className="workspace-header__label">Prototype feasibility workspace</span>
-            <h1>{address}</h1>
+            <span className="workspace-header__label">
+              {liveProperty ? "Official property match · prototype feasibility" : "Prototype feasibility workspace"}
+            </span>
+            <h1>{liveProperty?.matchedAddress || address}</h1>
             <p>{selectedProject.label} · {selectedProject.example}</p>
           </div>
           <div className="workspace-header__actions">
@@ -32,15 +38,44 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="prototype-alert">
-          <strong>Prototype mode</strong>
-          <span>This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision.</span>
+          <strong>Feasibility prototype</strong>
+          <span>
+            {liveProperty
+              ? "The property match below comes from City of Austin GIS. Feasibility checks, setbacks, dimensions and conclusions remain demonstration data and must not be used for a real-world decision."
+              : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
+          </span>
         </div>
+
+        {liveProperty && (
+          <section className="live-property-card" aria-label="Live official property match">
+            <div className="live-property-card__lead">
+              <span className="live-property-card__eyebrow">Live official property data</span>
+              <strong>{liveProperty.matchedAddress}</strong>
+              <p className="live-property-card__note">
+                Matched through the City of Austin address locator at {Math.round(liveProperty.matchScore)}% confidence. {" "}
+                <a href={liveProperty.sources.propertyProfile} target="_blank" rel="noreferrer">Open City Property Profile ↗</a>
+              </p>
+            </div>
+            <div className="live-property-card__fact">
+              <span>Zoning</span>
+              <strong>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Not returned"}</strong>
+            </div>
+            <div className="live-property-card__fact">
+              <span>Parcel ID</span>
+              <strong>{liveProperty.parcel.parcelId || "Not returned"}</strong>
+            </div>
+            <div className="live-property-card__fact">
+              <span>Jurisdiction</span>
+              <strong>{liveProperty.jurisdiction.label || "Austin-area match"}</strong>
+            </div>
+          </section>
+        )}
 
         <div className="results-grid">
           <section className="results-main">
             <article className="result-hero-card">
               <div className="result-hero-card__verdict">
-                <span className="result-hero-card__eyebrow">Initial feasibility</span>
+                <span className="result-hero-card__eyebrow">Prototype feasibility</span>
                 <div className="result-hero-card__statusline">
                   <span className="status-orb" aria-hidden="true" />
                   <h2>{demoResult.status}</h2>
@@ -48,7 +83,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                 <p>Based on the project assumptions and the demonstration rule set, the major dimensional checks appear to pass.</p>
               </div>
               <div className="result-hero-card__confidence">
-                <span>Confidence</span>
+                <span>Prototype confidence</span>
                 <strong>{demoResult.confidence}<small>/100</small></strong>
                 <div className="confidence-bar confidence-bar--large"><span style={{ width: `${demoResult.confidence}%` }} /></div>
                 <em>2 items still require verification</em>
@@ -57,7 +92,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
             <article className="result-section-card result-map-card">
               <div className="result-section-card__header">
-                <div><span className="card-kicker">Site analysis</span><h3>Indicative buildable area</h3></div>
+                <div><span className="card-kicker">Site analysis · demo geometry</span><h3>Indicative buildable area</h3></div>
                 <div className="map-tabs"><button className="map-tab map-tab--active">Parcel</button><button className="map-tab">Zoning</button><button className="map-tab">Constraints</button></div>
               </div>
               <div className="site-plan site-plan--large">
@@ -81,8 +116,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
             <article className="result-section-card">
               <div className="result-section-card__header">
-                <div><span className="card-kicker">Rule checks</span><h3>What appears to matter for this project</h3></div>
-                <span className="evidence-count">6 checks</span>
+                <div><span className="card-kicker">Prototype rule checks</span><h3>What appears to matter for this project</h3></div>
+                <span className="evidence-count">6 demo checks</span>
               </div>
               <div className="rule-table">
                 {demoResult.checks.map((check) => (
@@ -108,14 +143,24 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
           <aside className="results-aside">
             <article className="aside-card aside-card--property">
-              <div className="card-kicker">Property snapshot</div>
-              <dl className="property-facts">
-                <div><dt>Lot area</dt><dd>{demoResult.parcel.lotArea}</dd></div>
-                <div><dt>Frontage</dt><dd>{demoResult.parcel.frontage}</dd></div>
-                <div><dt>Depth</dt><dd>{demoResult.parcel.depth}</dd></div>
-                <div><dt>Zoning</dt><dd>{demoResult.parcel.zoning}</dd></div>
-                <div><dt>Jurisdiction</dt><dd>{demoResult.parcel.jurisdiction}</dd></div>
-              </dl>
+              <div className="card-kicker">{liveProperty ? "Official property snapshot" : "Prototype property snapshot"}</div>
+              {liveProperty ? (
+                <dl className="property-facts">
+                  <div><dt>Parcel ID</dt><dd>{liveProperty.parcel.parcelId || "Unavailable"}</dd></div>
+                  <div><dt>Property ID</dt><dd>{liveProperty.parcel.propertyId || "Unavailable"}</dd></div>
+                  <div><dt>Zoning</dt><dd>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Unavailable"}</dd></div>
+                  <div><dt>Jurisdiction</dt><dd>{liveProperty.jurisdiction.label || "Austin area"}</dd></div>
+                  <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
+                </dl>
+              ) : (
+                <dl className="property-facts">
+                  <div><dt>Lot area</dt><dd>{demoResult.parcel.lotArea}</dd></div>
+                  <div><dt>Frontage</dt><dd>{demoResult.parcel.frontage}</dd></div>
+                  <div><dt>Depth</dt><dd>{demoResult.parcel.depth}</dd></div>
+                  <div><dt>Zoning</dt><dd>{demoResult.parcel.zoning}</dd></div>
+                  <div><dt>Jurisdiction</dt><dd>{demoResult.parcel.jurisdiction}</dd></div>
+                </dl>
+              )}
             </article>
 
             <article className="aside-card aside-card--next">
