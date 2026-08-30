@@ -4,6 +4,8 @@ const AUSTIN_PARCELS = "https://maps.austintexas.gov/gis/rest/Shared/AppraisalDi
 const AUSTIN_JURISDICTION = "https://maps.austintexas.gov/gis/rest/Shared/JurisdictionsFill/MapServer/0/query";
 const AUSTIN_FEMA_FLOODPLAIN = "https://maps.austintexas.gov/gis/rest/Shared/Floodplain/MapServer/1/query";
 const AUSTIN_FULLY_DEVELOPED_FLOODPLAIN = "https://maps.austintexas.gov/gis/rest/Shared/Floodplain/MapServer/0/query";
+const AUSTIN_BUILDING_FOOTPRINTS_2023 = "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/0/query";
+const AUSTIN_IMPERVIOUS_2023 = "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/1/query";
 
 export const austinSourceLinks = {
   propertyProfile: "https://www.austintexas.gov/development-services/property-profile-overview",
@@ -14,6 +16,8 @@ export const austinSourceLinks = {
   femaFloodplain: "https://maps.austintexas.gov/gis/rest/Shared/Floodplain/MapServer/1",
   fullyDevelopedFloodplain: "https://maps.austintexas.gov/gis/rest/Shared/Floodplain/MapServer/0",
   floodplainGuidance: "https://www.austintexas.gov/watershed-protection/programs/floodplain-management",
+  buildingFootprints2023: "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/0",
+  imperviousCover2023: "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/1",
 } as const;
 
 type ArcGisCandidate = {
@@ -65,6 +69,17 @@ export type AustinPropertyMatch = {
     femaZones: string[];
     fullyDevelopedZones: string[];
     scope: "parcel_intersection";
+  };
+  structures: {
+    buildingFootprints: EsriPolygonGeometry[];
+    buildingCount: number;
+    sourceVintage: "2023";
+  };
+  impervious: {
+    featureCount: number;
+    featureTypes: string[];
+    sourceVintage: "2023";
+    calculationStatus: "features_only_not_clipped";
   };
   fetchedAt: string;
   sources: typeof austinSourceLinks;
@@ -128,7 +143,7 @@ async function pointSpatialQuery(url: string, longitude: number, latitude: numbe
   });
 }
 
-async function polygonSpatialQuery(url: string, polygon: EsriPolygonGeometry) {
+async function polygonSpatialQuery(url: string, polygon: EsriPolygonGeometry, returnGeometry = false) {
   return fetchArcGis(url, {
     f: "json",
     geometry: JSON.stringify(polygon),
@@ -136,7 +151,7 @@ async function polygonSpatialQuery(url: string, polygon: EsriPolygonGeometry) {
     inSR: "4326",
     spatialRel: "esriSpatialRelIntersects",
     outFields: "*",
-    returnGeometry: "false",
+    returnGeometry: returnGeometry ? "true" : "false",
     outSR: "4326",
   });
 }
@@ -181,15 +196,26 @@ export async function lookupAustinProperty(address: string): Promise<AustinPrope
   let femaZones: string[] = [];
   let fullyDevelopedZones: string[] = [];
   let parcelIntersectsMappedFloodplain: boolean | null = null;
+  let buildingFootprints: EsriPolygonGeometry[] = [];
+  let imperviousFeatureTypes: string[] = [];
+  let imperviousFeatureCount = 0;
 
   if (parcelGeometry) {
-    const [femaResult, fullyDevelopedResult] = await Promise.all([
+    const [femaResult, fullyDevelopedResult, buildingResult, imperviousResult] = await Promise.all([
       polygonSpatialQuery(AUSTIN_FEMA_FLOODPLAIN, parcelGeometry),
       polygonSpatialQuery(AUSTIN_FULLY_DEVELOPED_FLOODPLAIN, parcelGeometry),
+      polygonSpatialQuery(AUSTIN_BUILDING_FOOTPRINTS_2023, parcelGeometry, true),
+      polygonSpatialQuery(AUSTIN_IMPERVIOUS_2023, parcelGeometry),
     ]);
+
     femaZones = uniqueStrings(femaResult.features, ["FLOOD_ZONE"]);
     fullyDevelopedZones = uniqueStrings(fullyDevelopedResult.features, ["FLOOD_ZONE"]);
     parcelIntersectsMappedFloodplain = femaZones.length > 0 || fullyDevelopedZones.length > 0;
+    buildingFootprints = (buildingResult.features ?? [])
+      .map((feature) => asEsriPolygon(feature.geometry))
+      .filter((geometry): geometry is EsriPolygonGeometry => geometry !== null);
+    imperviousFeatureTypes = uniqueStrings(imperviousResult.features, ["FEATURE"]);
+    imperviousFeatureCount = imperviousResult.features?.length ?? 0;
   }
 
   return {
@@ -218,6 +244,17 @@ export async function lookupAustinProperty(address: string): Promise<AustinPrope
       femaZones,
       fullyDevelopedZones,
       scope: "parcel_intersection",
+    },
+    structures: {
+      buildingFootprints,
+      buildingCount: buildingFootprints.length,
+      sourceVintage: "2023",
+    },
+    impervious: {
+      featureCount: imperviousFeatureCount,
+      featureTypes: imperviousFeatureTypes,
+      sourceVintage: "2023",
+      calculationStatus: "features_only_not_clipped",
     },
     fetchedAt: new Date().toISOString(),
     sources: austinSourceLinks,
