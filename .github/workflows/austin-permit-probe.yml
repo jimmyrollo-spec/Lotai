@@ -10,16 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Fetch Austin permit sample
+      - name: Fetch Austin permit schema and sample
         shell: bash
         run: |
           set -euo pipefail
           node <<'NODE'
-          const url = 'https://data.austintexas.gov/resource/d792-2sc3.json?$limit=1';
-          const response = await fetch(url, { headers: { Accept: 'application/json' } });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const rows = await response.json();
-          if (!Array.isArray(rows) || rows.length === 0) throw new Error('No permit rows returned');
-          console.log('FIELDS=' + JSON.stringify(Object.keys(rows[0]).sort()));
-          console.log('SAMPLE=' + JSON.stringify(rows[0]));
+          const endpoints = {
+            columns: 'https://data.austintexas.gov/api/views/3syk-w9eu/columns.json',
+            sample: 'https://data.austintexas.gov/resource/3syk-w9eu.json?$limit=1',
+          };
+
+          for (const [label, url] of Object.entries(endpoints)) {
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            console.log(`${label.toUpperCase()}_HTTP=${response.status}`);
+            if (!response.ok) throw new Error(`${label} HTTP ${response.status}`);
+            const data = await response.json();
+            if (label === 'columns') {
+              console.log('COLUMNS=' + JSON.stringify(data.map((column) => ({
+                name: column.name,
+                fieldName: column.fieldName,
+                dataTypeName: column.dataTypeName,
+              }))));
+            } else {
+              if (!Array.isArray(data) || data.length === 0) throw new Error('No permit rows returned');
+              console.log('FIELDS=' + JSON.stringify(Object.keys(data[0]).sort()));
+              console.log('SAMPLE=' + JSON.stringify(data[0]));
+            }
+          }
           NODE
