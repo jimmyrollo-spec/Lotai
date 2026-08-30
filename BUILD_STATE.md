@@ -6,7 +6,7 @@
 
 ## Current phase
 
-**Phase 1 — first vertical slice**
+**Phase 1 — first vertical slice COMPLETE**
 
 Goal: establish the visual/product contract and make the primary journey tangible before integrating real municipal/parcel data.
 
@@ -24,7 +24,9 @@ Goal: establish the visual/product contract and make the primary journey tangibl
 - [x] Responsive/mobile styling
 - [x] Production build verified in GitHub Actions
 - [x] CI build check runs on pushes/PRs to `main`
-- [ ] Railway deployment
+- [x] Railway production deployment
+- [x] Railway preview domain: `web-production-7fb2d.up.railway.app`
+- [x] Next.js moved to patched 15.5.24 maintenance release after Railway security screening
 - [ ] Final brand/domain
 
 ### Explicitly NOT live yet
@@ -118,3 +120,4 @@ Before modifying code:
 - Regulatory interpretation can create liability if certainty is overstated.
 - Programmatic SEO can become thin/doorway content unless indexing is gated by unique sourced data.
 - Spatial precision can visually overstate certainty; map UX must disclose source/precision.
+- Dependency audit currently reports non-critical-to-Railway residual advisories; keep dependencies patched and review before adding auth/payments/customer data.
