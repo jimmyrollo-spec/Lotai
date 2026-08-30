@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Validate Austin GeometryServer area and intersect operations
+      - name: Validate Austin GeometryServer area, intersect and union operations
         shell: bash
         run: |
           set -euo pipefail
@@ -53,4 +53,11 @@ jobs:
           if (!Array.isArray(intersection.geometries) || intersection.geometries.length !== 1) {
             throw new Error('Unexpected intersection response');
           }
+
+          const union = await post('union', {
+            f: 'json',
+            sr: '4326',
+            geometries: JSON.stringify({ geometryType:'esriGeometryPolygon', geometries:[squareA, squareB] }),
+          });
+          if (!union.geometry || !Array.isArray(union.geometry.rings)) throw new Error('Unexpected union response');
           NODE
