@@ -23,13 +23,13 @@ export function SiteFooter() {
         <div>
           <h3>Authority</h3>
           <Link href="/methodology">Methodology</Link>
-          <span className="footer-muted">Coverage — coming soon</span>
-          <span className="footer-muted">Data sources — coming soon</span>
+          <Link href="/coverage">Coverage</Link>
+          <Link href="/sources">Data sources</Link>
         </div>
         <div>
           <h3>Important</h3>
           <p className="footer-legal">
-            Prototype results are demonstration data only. Production results will remain informational and must be verified with the authority having jurisdiction before design, purchase or construction decisions.
+            Source-backed beta facts are labeled separately from demonstration content. Feasibility information is decision support, not a permit or legal approval, and material conclusions should be verified with the authority having jurisdiction before design, purchase or construction decisions.
           </p>
         </div>
       </div>
