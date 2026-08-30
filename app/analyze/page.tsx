@@ -6,7 +6,7 @@ import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
 import { lookupAustinProperty } from "@/lib/providers/austin";
-import { evaluateAustinGarageFacts } from "@/lib/rules/evaluate-austin-garage";
+import { evaluateAustinGarageFacts, type AustinGarageIntendedUse } from "@/lib/rules/evaluate-austin-garage";
 
 type AnalyzeSearchParams = {
   address?: string;
@@ -17,12 +17,18 @@ type AnalyzeSearchParams = {
   stories?: string;
   location?: string;
   plumbing?: string;
+  intendedUse?: string;
 };
 
 function toPositiveNumber(value?: string) {
   if (!value) return null;
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function normalizeIntendedUse(value?: string): AustinGarageIntendedUse {
+  if (value === "workshop_storage" || value === "habitable" || value === "unsure") return value;
+  return "vehicle_storage";
 }
 
 function floodLabel(value: boolean | null) {
@@ -44,7 +50,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
   const heightFt = toPositiveNumber(params.height);
   const stories = toPositiveNumber(params.stories);
   const plumbing = params.plumbing === "yes" || params.plumbing === "unsure" ? params.plumbing : "no";
-  const hasProjectDetails = Boolean(params.width || params.depth || params.height || params.location || params.plumbing);
+  const intendedUse = normalizeIntendedUse(params.intendedUse);
+  const hasProjectDetails = Boolean(params.width || params.depth || params.height || params.location || params.plumbing || params.intendedUse);
 
   const liveRuleFacts = liveProperty && selectedProject.key === "garage" && hasProjectDetails
     ? evaluateAustinGarageFacts({
@@ -53,6 +60,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         heightFt,
         stories,
         plumbing,
+        intendedUse,
         baseZoning: liveProperty.zoning.baseDistrict || liveProperty.zoning.zoningType,
         floodIntersectsMappedFloodplain: liveProperty.flood.parcelIntersectsMappedFloodplain,
       })
@@ -133,6 +141,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
             stories: params.stories,
             location: params.location,
             plumbing: params.plumbing,
+            intendedUse: params.intendedUse,
           }}
         />
 
