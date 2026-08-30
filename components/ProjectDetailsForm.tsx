@@ -14,6 +14,7 @@ type Props = {
     stories?: string;
     location?: string;
     plumbing?: string;
+    intendedUse?: string;
   };
 };
 
@@ -25,6 +26,7 @@ export function ProjectDetailsForm({ address, project, initial = {} }: Props) {
   const [stories, setStories] = useState(initial.stories || "1");
   const [location, setLocation] = useState(initial.location || "rear");
   const [plumbing, setPlumbing] = useState(initial.plumbing || "no");
+  const [intendedUse, setIntendedUse] = useState(initial.intendedUse || "vehicle_storage");
 
   const area = useMemo(() => {
     const w = Number(width);
@@ -46,6 +48,7 @@ export function ProjectDetailsForm({ address, project, initial = {} }: Props) {
       stories,
       location,
       plumbing,
+      intendedUse,
     });
     router.push(`/analyze?${search.toString()}`);
   }
@@ -87,6 +90,15 @@ export function ProjectDetailsForm({ address, project, initial = {} }: Props) {
             <option value="side">Side yard</option>
             <option value="front">Front area</option>
             <option value="unsure">Not sure</option>
+          </select>
+        </label>
+        <label className={styles.field}>
+          <span>Intended use</span>
+          <select value={intendedUse} onChange={(e) => setIntendedUse(e.target.value)}>
+            <option value="vehicle_storage">Vehicle / equipment storage</option>
+            <option value="workshop_storage">Workshop / storage</option>
+            <option value="habitable">Living / habitable space planned</option>
+            <option value="unsure">Not sure yet</option>
           </select>
         </label>
         <label className={styles.field}>
