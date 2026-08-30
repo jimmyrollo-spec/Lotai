@@ -1,3 +1,13 @@
+import {
+  asEsriPolygon,
+  austinGeometrySource,
+  calculateClippedUnionAreaSqFt,
+  calculatePolygonAreaSqFt,
+  type EsriPolygonGeometry,
+} from "@/lib/providers/austin-geometry";
+
+export type { EsriPolygonGeometry } from "@/lib/providers/austin-geometry";
+
 const AUSTIN_GEOCODER = "https://maps.austintexas.gov/arcgis/rest/services/Geocode/COA_Locator/GeocodeServer/findAddressCandidates";
 const AUSTIN_ZONING = "https://maps.austintexas.gov/gis/rest/Shared/Zoning_1/MapServer/0/query";
 const AUSTIN_PARCELS = "https://maps.austintexas.gov/gis/rest/Shared/AppraisalDistricts/MapServer/0/query";
@@ -18,6 +28,7 @@ export const austinSourceLinks = {
   floodplainGuidance: "https://www.austintexas.gov/watershed-protection/programs/floodplain-management",
   buildingFootprints2023: "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/0",
   imperviousCover2023: "https://maps.austintexas.gov/arcgis/rest/services/Shared/PlanimetricsSurvey_1/MapServer/1",
+  geometryServer: austinGeometrySource.service,
 } as const;
 
 type ArcGisCandidate = {
@@ -38,10 +49,7 @@ type ArcGisResponse = {
   error?: { message?: string; details?: string[] };
 };
 
-export type EsriPolygonGeometry = {
-  rings: number[][][];
-  spatialReference?: Record<string, unknown>;
-};
+type GeometryCalculationStatus = "calculated" | "unavailable";
 
 export type AustinPropertyMatch = {
   provider: "city_of_austin";
@@ -53,6 +61,8 @@ export type AustinPropertyMatch = {
     parcelId: string | null;
     propertyId: string | null;
     geometry: EsriPolygonGeometry | null;
+    areaSqFt: number | null;
+    areaCalculationStatus: GeometryCalculationStatus;
   };
   zoning: {
     zoningType: string | null;
@@ -73,13 +83,18 @@ export type AustinPropertyMatch = {
   structures: {
     buildingFootprints: EsriPolygonGeometry[];
     buildingCount: number;
+    existingBuildingAreaSqFt: number | null;
+    existingBuildingCoveragePct: number | null;
     sourceVintage: "2023";
+    calculationStatus: GeometryCalculationStatus;
   };
   impervious: {
     featureCount: number;
     featureTypes: string[];
+    existingImperviousAreaSqFt: number | null;
+    existingImperviousCoveragePct: number | null;
     sourceVintage: "2023";
-    calculationStatus: "features_only_not_clipped";
+    calculationStatus: GeometryCalculationStatus;
   };
   fetchedAt: string;
   sources: typeof austinSourceLinks;
@@ -104,16 +119,9 @@ function uniqueStrings(features: ArcGisFeature[] | undefined, keys: string[]) {
   return [...values];
 }
 
-function asEsriPolygon(geometry: unknown): EsriPolygonGeometry | null {
-  if (!geometry || typeof geometry !== "object") return null;
-  const rings = (geometry as { rings?: unknown }).rings;
-  if (!Array.isArray(rings) || rings.length === 0) return null;
-  const valid = rings.every((ring) =>
-    Array.isArray(ring) && ring.every((point) =>
-      Array.isArray(point) && point.length >= 2 && typeof point[0] === "number" && typeof point[1] === "number",
-    ),
-  );
-  return valid ? (geometry as EsriPolygonGeometry) : null;
+function percent(numerator: number | null, denominator: number | null) {
+  if (numerator === null || denominator === null || denominator <= 0) return null;
+  return (numerator / denominator) * 100;
 }
 
 async function fetchArcGis(url: string, params: Record<string, string>): Promise<ArcGisResponse> {
@@ -193,29 +201,65 @@ export async function lookupAustinProperty(address: string): Promise<AustinPrope
   const jurisdictionFeature = jurisdictionResult.features?.[0];
   const parcelGeometry = asEsriPolygon(parcelFeature?.geometry);
 
+  let parcelAreaSqFt: number | null = null;
+  let parcelAreaCalculationStatus: GeometryCalculationStatus = "unavailable";
   let femaZones: string[] = [];
   let fullyDevelopedZones: string[] = [];
   let parcelIntersectsMappedFloodplain: boolean | null = null;
   let buildingFootprints: EsriPolygonGeometry[] = [];
+  let existingBuildingAreaSqFt: number | null = null;
+  let buildingCalculationStatus: GeometryCalculationStatus = "unavailable";
   let imperviousFeatureTypes: string[] = [];
   let imperviousFeatureCount = 0;
+  let existingImperviousAreaSqFt: number | null = null;
+  let imperviousCalculationStatus: GeometryCalculationStatus = "unavailable";
 
   if (parcelGeometry) {
     const [femaResult, fullyDevelopedResult, buildingResult, imperviousResult] = await Promise.all([
       polygonSpatialQuery(AUSTIN_FEMA_FLOODPLAIN, parcelGeometry),
       polygonSpatialQuery(AUSTIN_FULLY_DEVELOPED_FLOODPLAIN, parcelGeometry),
       polygonSpatialQuery(AUSTIN_BUILDING_FOOTPRINTS_2023, parcelGeometry, true),
-      polygonSpatialQuery(AUSTIN_IMPERVIOUS_2023, parcelGeometry),
+      polygonSpatialQuery(AUSTIN_IMPERVIOUS_2023, parcelGeometry, true),
     ]);
 
     femaZones = uniqueStrings(femaResult.features, ["FLOOD_ZONE"]);
     fullyDevelopedZones = uniqueStrings(fullyDevelopedResult.features, ["FLOOD_ZONE"]);
     parcelIntersectsMappedFloodplain = femaZones.length > 0 || fullyDevelopedZones.length > 0;
-    buildingFootprints = (buildingResult.features ?? [])
+
+    const rawBuildingFootprints = (buildingResult.features ?? [])
       .map((feature) => asEsriPolygon(feature.geometry))
       .filter((geometry): geometry is EsriPolygonGeometry => geometry !== null);
+    const rawImperviousPolygons = (imperviousResult.features ?? [])
+      .map((feature) => asEsriPolygon(feature.geometry))
+      .filter((geometry): geometry is EsriPolygonGeometry => geometry !== null);
+
     imperviousFeatureTypes = uniqueStrings(imperviousResult.features, ["FEATURE"]);
-    imperviousFeatureCount = imperviousResult.features?.length ?? 0;
+    imperviousFeatureCount = rawImperviousPolygons.length;
+
+    try {
+      parcelAreaSqFt = await calculatePolygonAreaSqFt(parcelGeometry);
+      parcelAreaCalculationStatus = "calculated";
+    } catch {
+      parcelAreaSqFt = null;
+    }
+
+    try {
+      const buildingCoverage = await calculateClippedUnionAreaSqFt(rawBuildingFootprints, parcelGeometry);
+      buildingFootprints = buildingCoverage.clippedPolygons;
+      existingBuildingAreaSqFt = buildingCoverage.areaSqFt;
+      buildingCalculationStatus = "calculated";
+    } catch {
+      buildingFootprints = rawBuildingFootprints;
+      existingBuildingAreaSqFt = null;
+    }
+
+    try {
+      const imperviousCoverage = await calculateClippedUnionAreaSqFt(rawImperviousPolygons, parcelGeometry);
+      existingImperviousAreaSqFt = imperviousCoverage.areaSqFt;
+      imperviousCalculationStatus = "calculated";
+    } catch {
+      existingImperviousAreaSqFt = null;
+    }
   }
 
   return {
@@ -228,6 +272,8 @@ export async function lookupAustinProperty(address: string): Promise<AustinPrope
       parcelId: firstString(parcelFeature?.attributes, ["PID_10", "PARCEL_ID", "PARCELID"]),
       propertyId: firstString(parcelFeature?.attributes, ["PROP_ID", "PROPERTY_ID", "PROPERTYID"]),
       geometry: parcelGeometry,
+      areaSqFt: parcelAreaSqFt,
+      areaCalculationStatus: parcelAreaCalculationStatus,
     },
     zoning: {
       zoningType: firstString(zoningFeature?.attributes, ["ZONING_ZTYPE", "ZONING", "ZONING_TYPE"]),
@@ -248,13 +294,18 @@ export async function lookupAustinProperty(address: string): Promise<AustinPrope
     structures: {
       buildingFootprints,
       buildingCount: buildingFootprints.length,
+      existingBuildingAreaSqFt,
+      existingBuildingCoveragePct: percent(existingBuildingAreaSqFt, parcelAreaSqFt),
       sourceVintage: "2023",
+      calculationStatus: buildingCalculationStatus,
     },
     impervious: {
       featureCount: imperviousFeatureCount,
       featureTypes: imperviousFeatureTypes,
+      existingImperviousAreaSqFt,
+      existingImperviousCoveragePct: percent(existingImperviousAreaSqFt, parcelAreaSqFt),
       sourceVintage: "2023",
-      calculationStatus: "features_only_not_clipped",
+      calculationStatus: imperviousCalculationStatus,
     },
     fetchedAt: new Date().toISOString(),
     sources: austinSourceLinks,
