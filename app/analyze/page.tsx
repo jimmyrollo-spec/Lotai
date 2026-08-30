@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AddressProjectForm } from "@/components/AddressProjectForm";
+import { LiveAnalysisStatus } from "@/components/LiveAnalysisStatus";
 import { LiveRuleFacts } from "@/components/LiveRuleFacts";
 import { OfficialParcelGraphic } from "@/components/OfficialParcelGraphic";
 import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
@@ -36,6 +37,12 @@ function floodLabel(value: boolean | null) {
   if (value === false) return "No mapped intersection";
   return "Unavailable";
 }
+
+const liveNextSteps = [
+  "Confirm the proposed placement against a current survey, easements and any applicable overlays.",
+  "Resolve the remaining setback and building / impervious-cover checks for the exact project dimensions.",
+  "Confirm the complete building and trade-permit path before construction or paid design work begins.",
+];
 
 export default async function AnalyzePage({ searchParams }: { searchParams: Promise<AnalyzeSearchParams> }) {
   const params = await searchParams;
@@ -98,10 +105,10 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="prototype-alert">
-          <strong>Feasibility still in prototype</strong>
+          <strong>{liveProperty ? "Source-backed beta · no overall verdict yet" : "Prototype mode"}</strong>
           <span>
             {liveProperty
-              ? "The property match, parcel boundary, mapped building footprints, flood screening and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, proposed-project placement and remaining demonstration checks are still prototype and must not be used as permit advice."
+              ? "The property match, parcel boundary, mapped building footprints, flood screening and Live regulatory facts are source-backed Austin data. We deliberately withhold an overall feasibility verdict until the remaining material checks are implemented."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -147,24 +154,29 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
         <div className="results-grid">
           <section className="results-main">
-            {liveRuleFacts.length > 0 && <LiveRuleFacts facts={liveRuleFacts} />}
-
-            <article className="result-hero-card">
-              <div className="result-hero-card__verdict">
-                <span className="result-hero-card__eyebrow">Prototype feasibility</span>
-                <div className="result-hero-card__statusline">
-                  <span className="status-orb" aria-hidden="true" />
-                  <h2>{demoResult.status}</h2>
+            {liveProperty ? (
+              <>
+                <LiveAnalysisStatus facts={liveRuleFacts} hasProjectDetails={hasProjectDetails} />
+                {liveRuleFacts.length > 0 && <LiveRuleFacts facts={liveRuleFacts} />}
+              </>
+            ) : (
+              <article className="result-hero-card">
+                <div className="result-hero-card__verdict">
+                  <span className="result-hero-card__eyebrow">Prototype feasibility</span>
+                  <div className="result-hero-card__statusline">
+                    <span className="status-orb" aria-hidden="true" />
+                    <h2>{demoResult.status}</h2>
+                  </div>
+                  <p>Based on the project assumptions and the demonstration rule set, the major dimensional checks appear to pass.</p>
                 </div>
-                <p>Based on the project assumptions and the demonstration rule set, the major dimensional checks appear to pass.</p>
-              </div>
-              <div className="result-hero-card__confidence">
-                <span>Prototype confidence</span>
-                <strong>{demoResult.confidence}<small>/100</small></strong>
-                <div className="confidence-bar confidence-bar--large"><span style={{ width: `${demoResult.confidence}%` }} /></div>
-                <em>2 items still require verification</em>
-              </div>
-            </article>
+                <div className="result-hero-card__confidence">
+                  <span>Prototype confidence</span>
+                  <strong>{demoResult.confidence}<small>/100</small></strong>
+                  <div className="confidence-bar confidence-bar--large"><span style={{ width: `${demoResult.confidence}%` }} /></div>
+                  <em>2 items still require verification</em>
+                </div>
+              </article>
+            )}
 
             {liveProperty?.parcel.geometry ? (
               <article className="result-section-card result-map-card">
@@ -185,7 +197,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   Parcel geometry comes from the City of Austin TCAD parcel layer. Building footprints come from the City&apos;s 2023 planimetric survey. Flood screening tests the full parcel against the City FEMA and fully-developed floodplain layers. None of these layers alone establish a legal survey boundary or proposed-project placement.
                 </p>
               </article>
-            ) : (
+            ) : !liveProperty ? (
               <article className="result-section-card result-map-card">
                 <div className="result-section-card__header">
                   <div><span className="card-kicker">Site analysis · demo geometry</span><h3>Indicative buildable area</h3></div>
@@ -209,33 +221,44 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                 </div>
                 <p className="map-disclaimer">Illustrative geometry only in prototype mode. Production geometry must come from authoritative or licensed parcel/spatial sources.</p>
               </article>
+            ) : (
+              <article className="result-section-card">
+                <div className="result-section-card__header">
+                  <div><span className="card-kicker">Official spatial data</span><h3>Parcel geometry unavailable</h3></div>
+                </div>
+                <div className="constraint-list"><div className="constraint-item"><span>01</span><p>The address matched, but the parcel polygon was not returned. Spatial conclusions remain unresolved rather than falling back to illustrative geometry.</p></div></div>
+              </article>
             )}
 
-            <article className="result-section-card">
-              <div className="result-section-card__header">
-                <div><span className="card-kicker">Prototype rule checks</span><h3>Remaining demonstration checks</h3></div>
-                <span className="evidence-count">6 demo checks</span>
-              </div>
-              <div className="rule-table">
-                {demoResult.checks.map((check) => (
-                  <div className="rule-row" key={check.label}>
-                    <span className={`rule-dot rule-dot--${check.tone}`} aria-hidden="true" />
-                    <span className="rule-row__label">{check.label}</span>
-                    <strong>{check.value}</strong>
-                    <button type="button">Evidence</button>
+            {!liveProperty && (
+              <>
+                <article className="result-section-card">
+                  <div className="result-section-card__header">
+                    <div><span className="card-kicker">Prototype rule checks</span><h3>Remaining demonstration checks</h3></div>
+                    <span className="evidence-count">6 demo checks</span>
                   </div>
-                ))}
-              </div>
-            </article>
+                  <div className="rule-table">
+                    {demoResult.checks.map((check) => (
+                      <div className="rule-row" key={check.label}>
+                        <span className={`rule-dot rule-dot--${check.tone}`} aria-hidden="true" />
+                        <span className="rule-row__label">{check.label}</span>
+                        <strong>{check.value}</strong>
+                        <button type="button">Evidence</button>
+                      </div>
+                    ))}
+                  </div>
+                </article>
 
-            <article className="result-section-card">
-              <div className="result-section-card__header"><div><span className="card-kicker">Verification</span><h3>Items that could still change the answer</h3></div></div>
-              <div className="constraint-list">
-                {demoResult.constraints.map((item, index) => (
-                  <div className="constraint-item" key={item}><span>0{index + 1}</span><p>{item}</p></div>
-                ))}
-              </div>
-            </article>
+                <article className="result-section-card">
+                  <div className="result-section-card__header"><div><span className="card-kicker">Verification</span><h3>Items that could still change the answer</h3></div></div>
+                  <div className="constraint-list">
+                    {demoResult.constraints.map((item, index) => (
+                      <div className="constraint-item" key={item}><span>0{index + 1}</span><p>{item}</p></div>
+                    ))}
+                  </div>
+                </article>
+              </>
+            )}
           </section>
 
           <aside className="results-aside">
@@ -265,9 +288,9 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
             <article className="aside-card aside-card--next">
               <div className="card-kicker">Next steps</div>
-              <h3>What to verify before committing money</h3>
+              <h3>{liveProperty ? "What still needs to be resolved" : "What to verify before committing money"}</h3>
               <ol className="next-list">
-                {demoResult.nextSteps.map((step) => <li key={step}>{step}</li>)}
+                {(liveProperty ? liveNextSteps : demoResult.nextSteps).map((step) => <li key={step}>{step}</li>)}
               </ol>
             </article>
 
