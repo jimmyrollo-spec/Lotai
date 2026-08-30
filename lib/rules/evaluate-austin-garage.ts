@@ -1,9 +1,12 @@
+export type AustinGarageIntendedUse = "vehicle_storage" | "workshop_storage" | "habitable" | "unsure";
+
 export type AustinGarageInputs = {
   widthFt: number | null;
   depthFt: number | null;
   heightFt: number | null;
   stories: number | null;
   plumbing: "yes" | "no" | "unsure";
+  intendedUse: AustinGarageIntendedUse;
   baseZoning: string | null;
   floodIntersectsMappedFloodplain: boolean | null;
 };
@@ -27,6 +30,12 @@ function cleanBaseZoning(value: string | null) {
   if (!value) return null;
   const match = value.toUpperCase().match(/\b(SF-[123])\b/);
   return match?.[1] ?? null;
+}
+
+function exemptionUseState(intendedUse: AustinGarageIntendedUse) {
+  if (intendedUse === "habitable") return "fails" as const;
+  if (intendedUse === "vehicle_storage" || intendedUse === "workshop_storage") return "passes" as const;
+  return "unresolved" as const;
 }
 
 export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGarageRuleFact[] {
@@ -67,34 +76,60 @@ export function evaluateAustinGarageFacts(inputs: AustinGarageInputs): AustinGar
   }
 
   if (area !== null) {
+    const heightState = inputs.heightFt === null ? "unresolved" : inputs.heightFt <= 15 ? "passes" : "fails";
+    const storyState = inputs.stories === null ? "unresolved" : inputs.stories <= 1 ? "passes" : "fails";
+    const plumbingState = inputs.plumbing === "unsure" ? "unresolved" : inputs.plumbing === "no" ? "passes" : "fails";
+    const useState = exemptionUseState(inputs.intendedUse);
+    const floodState = inputs.floodIntersectsMappedFloodplain === null
+      ? "unresolved"
+      : inputs.floodIntersectsMappedFloodplain
+        ? "fails"
+        : "passes";
+
     if (area > 200) {
       facts.push({
         id: "permit-exemption-area",
         label: "Small detached-structure permit exemption",
         value: "200 sq ft exemption threshold exceeded",
         tone: "warning",
-        explanation: `The proposed footprint is approximately ${Math.round(area).toLocaleString()} sq ft. Austin's listed residential building-permit exemption for a detached accessory structure is limited to structures no larger than 200 sq ft and also has height, plumbing, dwelling-use and flood-hazard conditions. This means that specific exemption does not apply based on area alone; it is not itself a final permit determination.`,
+        explanation: `The proposed footprint is approximately ${Math.round(area).toLocaleString()} sq ft. Austin's listed residential building-permit exemption for a detached accessory structure is limited to structures no larger than 200 sq ft and also has height, plumbing, dwelling-use and flood-hazard conditions. This specific exemption cannot apply based on area alone; that is not itself a complete permit-path determination.`,
         sourceLabel: "City of Austin · Work Exempt from Building Permits",
         sourceUrl: WORK_EXEMPT_URL,
       });
     } else {
-      const knownHeightPass = inputs.heightFt !== null && inputs.heightFt <= 15;
-      const knownStoryPass = inputs.stories !== null && inputs.stories <= 1;
-      const knownPlumbingPass = inputs.plumbing === "no";
-      const knownFloodPass = inputs.floodIntersectsMappedFloodplain === false;
-      const floodFails = inputs.floodIntersectsMappedFloodplain === true;
-      const knownConditionsPass = knownHeightPass && knownStoryPass && knownPlumbingPass && knownFloodPass;
+      const states = [heightState, storyState, plumbingState, useState, floodState];
+      const anyFail = states.includes("fails");
+      const anyUnresolved = states.includes("unresolved");
+      const listedConditionsAppearSatisfied = !anyFail && !anyUnresolved;
+
+      let value = "Additional exemption conditions unresolved";
+      let tone: AustinGarageRuleFact["tone"] = "neutral";
+
+      if (useState === "fails") {
+        value = "Dwelling-use condition not satisfied";
+        tone = "warning";
+      } else if (plumbingState === "fails") {
+        value = "No-plumbing condition not satisfied";
+        tone = "warning";
+      } else if (heightState === "fails" || storyState === "fails") {
+        value = "Height / one-story condition not satisfied";
+        tone = "warning";
+      } else if (floodState === "fails") {
+        value = "Mapped floodplain condition not satisfied at parcel-screening level";
+        tone = "warning";
+      } else if (listedConditionsAppearSatisfied) {
+        value = "Listed exemption conditions appear satisfied from current inputs";
+        tone = "positive";
+      }
 
       facts.push({
         id: "permit-exemption-area",
-        label: "Small detached-structure permit exemption",
-        value: floodFails
-          ? "Mapped floodplain condition not satisfied at parcel-screening level"
-          : knownConditionsPass
-            ? "Several listed conditions appear satisfied · dwelling use still must be confirmed"
-            : "Additional exemption conditions unresolved",
-        tone: floodFails || knownConditionsPass ? "warning" : "neutral",
-        explanation: "Austin lists an exemption for qualifying one-story detached accessory structures no larger than 200 sq ft and 15 ft high, with no dwelling use or plumbing, and outside a flood hazard area. This beta check resolves only conditions supported by the project inputs and mapped parcel/flood data; it does not mark a structure permit-exempt until every condition is confirmed.",
+        label: "Small detached-structure building-permit exemption",
+        value,
+        tone,
+        explanation: listedConditionsAppearSatisfied
+          ? "Based on the supplied dimensions and use, the structure is no larger than 200 sq ft, no more than one story / 15 ft, has no planned plumbing or dwelling use, and the parcel did not intersect the queried Austin floodplain layers. Those listed conditions appear satisfied. This is not an authorization to build and does not resolve electrical permits, other trade permits, zoning/site standards, overlays, easements or other applicable approvals."
+          : "Austin lists an exemption for qualifying one-story detached accessory structures no larger than 200 sq ft and 15 ft high, with no dwelling use or plumbing, and outside a flood hazard area. The beta check only resolves conditions supported by the supplied project scope and mapped parcel data; failed or unknown conditions remain visible rather than being assumed away.",
         sourceLabel: "City of Austin · Work Exempt from Building Permits",
         sourceUrl: WORK_EXEMPT_URL,
       });
