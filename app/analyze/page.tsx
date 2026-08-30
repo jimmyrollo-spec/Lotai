@@ -1,16 +1,54 @@
 import Link from "next/link";
 import { AddressProjectForm } from "@/components/AddressProjectForm";
+import { LiveRuleFacts } from "@/components/LiveRuleFacts";
+import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
 import { lookupAustinProperty } from "@/lib/providers/austin";
+import { evaluateAustinGarageFacts } from "@/lib/rules/evaluate-austin-garage";
 
-export default async function AnalyzePage({ searchParams }: { searchParams: Promise<{ address?: string; project?: string }> }) {
+type AnalyzeSearchParams = {
+  address?: string;
+  project?: string;
+  width?: string;
+  depth?: string;
+  height?: string;
+  stories?: string;
+  location?: string;
+  plumbing?: string;
+};
+
+function toPositiveNumber(value?: string) {
+  if (!value) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+export default async function AnalyzePage({ searchParams }: { searchParams: Promise<AnalyzeSearchParams> }) {
   const params = await searchParams;
   const address = params.address || "Sample property";
   const selectedProject = projectDefinitions.find((item) => item.key === params.project) ?? projectDefinitions[0];
   const liveProperty = address !== "Sample property"
     ? await lookupAustinProperty(address).catch(() => null)
     : null;
+
+  const widthFt = toPositiveNumber(params.width);
+  const depthFt = toPositiveNumber(params.depth);
+  const heightFt = toPositiveNumber(params.height);
+  const stories = toPositiveNumber(params.stories);
+  const plumbing = params.plumbing === "yes" || params.plumbing === "unsure" ? params.plumbing : "no";
+  const hasProjectDetails = Boolean(params.width || params.depth || params.height || params.location || params.plumbing);
+
+  const liveRuleFacts = liveProperty && selectedProject.key === "garage" && hasProjectDetails
+    ? evaluateAustinGarageFacts({
+        widthFt,
+        depthFt,
+        heightFt,
+        stories,
+        plumbing,
+        baseZoning: liveProperty.zoning.baseDistrict || liveProperty.zoning.zoningType,
+      })
+    : [];
 
   return (
     <main className="workspace-page">
@@ -26,7 +64,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <div>
             <Link href="/" className="back-link">← Back to overview</Link>
             <span className="workspace-header__label">
-              {liveProperty ? "Official property match · prototype feasibility" : "Prototype feasibility workspace"}
+              {liveProperty ? "Official property match · source-backed beta" : "Prototype feasibility workspace"}
             </span>
             <h1>{liveProperty?.matchedAddress || address}</h1>
             <p>{selectedProject.label} · {selectedProject.example}</p>
@@ -38,10 +76,10 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="prototype-alert">
-          <strong>Feasibility prototype</strong>
+          <strong>Feasibility still in prototype</strong>
           <span>
             {liveProperty
-              ? "The property match below comes from City of Austin GIS. Feasibility checks, setbacks, dimensions and conclusions remain demonstration data and must not be used for a real-world decision."
+              ? "The property match and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, site-plan geometry and remaining demonstration checks are still prototype and must not be used as permit advice."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -71,8 +109,23 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           </section>
         )}
 
+        <ProjectDetailsForm
+          address={address}
+          project={selectedProject.key}
+          initial={{
+            width: params.width,
+            depth: params.depth,
+            height: params.height,
+            stories: params.stories,
+            location: params.location,
+            plumbing: params.plumbing,
+          }}
+        />
+
         <div className="results-grid">
           <section className="results-main">
+            {liveRuleFacts.length > 0 && <LiveRuleFacts facts={liveRuleFacts} />}
+
             <article className="result-hero-card">
               <div className="result-hero-card__verdict">
                 <span className="result-hero-card__eyebrow">Prototype feasibility</span>
@@ -116,7 +169,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
 
             <article className="result-section-card">
               <div className="result-section-card__header">
-                <div><span className="card-kicker">Prototype rule checks</span><h3>What appears to matter for this project</h3></div>
+                <div><span className="card-kicker">Prototype rule checks</span><h3>Remaining demonstration checks</h3></div>
                 <span className="evidence-count">6 demo checks</span>
               </div>
               <div className="rule-table">
