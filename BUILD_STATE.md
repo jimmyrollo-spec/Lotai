@@ -6,11 +6,11 @@
 
 ## Current phase
 
-**Phase 1 — first vertical slice COMPLETE**
+**Phase 2 — data foundation STARTED**
 
-Goal: establish the visual/product contract and make the primary journey tangible before integrating real municipal/parcel data.
+Phase 1 established the visual/product contract. Phase 1.1 tightened the live hero conversion experience without redesigning the established system.
 
-### Included in this phase
+### Phase 1 / 1.1 complete
 - [x] Repository initialized
 - [x] Architecture contract documented
 - [x] Design system documented
@@ -27,23 +27,43 @@ Goal: establish the visual/product contract and make the primary journey tangibl
 - [x] Railway production deployment
 - [x] Railway preview domain: `web-production-7fb2d.up.railway.app`
 - [x] Next.js moved to patched 15.5.24 maintenance release after Railway security screening
+- [x] Hero/search balance tightened from live screenshot review
+- [x] Address field clipping corrected through desktop layout rebalance
+- [x] Primary CTA simplified to `Check property`
+- [x] Demo-property shortcut added
 - [ ] Final brand/domain
 
+### Phase 2 progress
+- [x] Austin selected as first technical integration proving official municipal GIS can power property identification
+- [x] Official City of Austin address-locator provider added
+- [x] Official City of Austin TCAD parcel spatial lookup added
+- [x] Official City of Austin zoning spatial lookup added
+- [x] Official City of Austin jurisdiction spatial lookup added
+- [x] Source URLs stored alongside the provider output
+- [x] `/api/coverage/austin?address=...` diagnostic endpoint added
+- [x] Workspace can show a live Austin property match separately from prototype feasibility conclusions
+- [x] CI build verified after Austin integration
+- [ ] Validate multiple Austin addresses against the deployed endpoint
+- [ ] Confirm exact jurisdiction field mapping from returned GIS attributes
+- [ ] Render authoritative parcel polygon on the workspace map
+- [ ] Add Postgres/PostGIS schema and migrations
+- [ ] Build normalized Austin detached-garage rule set
+- [ ] Replace demo feasibility checks with source-backed analysis for supported Austin properties
+
 ### Explicitly NOT live yet
-- Address autocomplete/geocoding
-- Parcel resolution
-- GIS/map provider
-- Zoning lookup
-- Municipal code/rule ingestion
-- Permit data
-- Real confidence scoring
+- National address autocomplete/geocoding
+- Production parcel resolution outside the Austin proof integration
+- Production map provider
+- Detached-garage rules engine
+- Permit history
+- Real feasibility/confidence scoring
 - Authentication
 - Payments
 - PDF reports
 - Analytics
 - Professional dashboard
 
-All result data currently comes from `lib/demo-data.ts` and is labeled as prototype data in the UI.
+`lib/demo-data.ts` still supplies feasibility conclusions. When a successful Austin GIS match appears, it is explicitly separated and labeled as live official property data; demo feasibility must never be presented as a live conclusion.
 
 ## Current V1 project priority
 
@@ -55,15 +75,12 @@ All result data currently comes from `lib/demo-data.ts` and is labeled as protot
 
 ADU is intentionally not the primary wedge because direct competitors already concentrate heavily on ADU/density analysis.
 
-## Next phase
+## Phase 2 definition of done
 
-**Phase 2 — data foundation + one real launch jurisdiction**
-
-Definition of done:
-1. Select one launch jurisdiction based on data accessibility + SEO/commercial value.
+1. Confirm launch jurisdiction based on data accessibility + SEO/commercial value; Austin is the current technical proof market, not an irreversible nationwide strategy decision.
 2. Implement provider interfaces for geocoding, parcel lookup and jurisdiction resolution.
-3. Add Postgres/PostGIS schema and migrations.
-4. Ingest authoritative parcel/zoning data for the launch jurisdiction.
+3. Add PostgreSQL/PostGIS schema and migrations.
+4. Ingest or reliably query authoritative parcel/zoning data for the launch jurisdiction.
 5. Build the first normalized project-rule set (detached garage first).
 6. Replace demo result generation with a source-backed analysis endpoint for supported properties.
 7. Keep unsupported properties honest; never fabricate a result.
@@ -121,3 +138,4 @@ Before modifying code:
 - Programmatic SEO can become thin/doorway content unless indexing is gated by unique sourced data.
 - Spatial precision can visually overstate certainty; map UX must disclose source/precision.
 - Dependency audit currently reports non-critical-to-Railway residual advisories; keep dependencies patched and review before adding auth/payments/customer data.
+- Direct municipal ArcGIS dependencies can change fields/endpoints; production ingestion needs provider contracts, monitoring, caching and graceful fallback.
