@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AddressProjectForm } from "@/components/AddressProjectForm";
 import { LiveRuleFacts } from "@/components/LiveRuleFacts";
+import { OfficialParcelGraphic } from "@/components/OfficialParcelGraphic";
 import { ProjectDetailsForm } from "@/components/ProjectDetailsForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { demoResult, projectDefinitions } from "@/lib/demo-data";
@@ -22,6 +23,12 @@ function toPositiveNumber(value?: string) {
   if (!value) return null;
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function floodLabel(value: boolean | null) {
+  if (value === true) return "Mapped intersection";
+  if (value === false) return "No mapped intersection";
+  return "Unavailable";
 }
 
 export default async function AnalyzePage({ searchParams }: { searchParams: Promise<AnalyzeSearchParams> }) {
@@ -47,8 +54,15 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
         stories,
         plumbing,
         baseZoning: liveProperty.zoning.baseDistrict || liveProperty.zoning.zoningType,
+        floodIntersectsMappedFloodplain: liveProperty.flood.parcelIntersectsMappedFloodplain,
       })
     : [];
+
+  const jurisdictionDisplay = liveProperty
+    ? [liveProperty.jurisdiction.cityName, liveProperty.jurisdiction.label || liveProperty.jurisdiction.typeSpecifics || liveProperty.jurisdiction.type]
+        .filter(Boolean)
+        .join(" · ") || "Austin-area match"
+    : null;
 
   return (
     <main className="workspace-page">
@@ -79,7 +93,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
           <strong>Feasibility still in prototype</strong>
           <span>
             {liveProperty
-              ? "The property match and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, site-plan geometry and remaining demonstration checks are still prototype and must not be used as permit advice."
+              ? "The property match, parcel boundary, flood screening and any section labeled Live regulatory facts are source-backed Austin data. The overall feasibility verdict, proposed-project placement and remaining demonstration checks are still prototype and must not be used as permit advice."
               : "This screen demonstrates the product experience. Parcel, zoning and regulatory data below are sample data and must not be used for a real-world decision."}
           </span>
         </div>
@@ -104,7 +118,7 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
             </div>
             <div className="live-property-card__fact">
               <span>Jurisdiction</span>
-              <strong>{liveProperty.jurisdiction.label || "Austin-area match"}</strong>
+              <strong>{jurisdictionDisplay}</strong>
             </div>
           </section>
         )}
@@ -143,29 +157,49 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
               </div>
             </article>
 
-            <article className="result-section-card result-map-card">
-              <div className="result-section-card__header">
-                <div><span className="card-kicker">Site analysis · demo geometry</span><h3>Indicative buildable area</h3></div>
-                <div className="map-tabs"><button className="map-tab map-tab--active">Parcel</button><button className="map-tab">Zoning</button><button className="map-tab">Constraints</button></div>
-              </div>
-              <div className="site-plan site-plan--large">
-                <div className="site-plan__north">N</div>
-                <div className="site-plan__road">STREET</div>
-                <div className="site-plan__parcel">
-                  <div className="site-plan__buildable" />
-                  <div className="site-plan__house">EXISTING HOME</div>
-                  <div className="site-plan__project"><span>PROPOSED</span><strong>{selectedProject.shortLabel.toUpperCase()}</strong></div>
-                  <span className="site-plan__measure site-plan__measure--rear">5′ setback</span>
-                  <span className="site-plan__measure site-plan__measure--side">5′ setback</span>
+            {liveProperty?.parcel.geometry ? (
+              <article className="result-section-card result-map-card">
+                <div className="result-section-card__header">
+                  <div>
+                    <span className="card-kicker">Official spatial data · parcel-level</span>
+                    <h3>Property boundary and mapped flood screening</h3>
+                  </div>
+                  <span className="evidence-count">City of Austin GIS</span>
                 </div>
-                <div className="site-plan__legend">
-                  <span><i className="legend-box legend-box--parcel" /> Parcel</span>
-                  <span><i className="legend-box legend-box--buildable" /> Indicative buildable area</span>
-                  <span><i className="legend-box legend-box--project" /> Proposed project</span>
+                <OfficialParcelGraphic
+                  geometry={liveProperty.parcel.geometry}
+                  location={liveProperty.location}
+                  floodIntersects={liveProperty.flood.parcelIntersectsMappedFloodplain}
+                />
+                <p className="map-disclaimer">
+                  Parcel geometry comes from the City of Austin TCAD parcel layer. Flood screening tests the full parcel against the City FEMA and fully-developed floodplain layers; it does not determine whether a proposed project footprint itself lies inside a regulated area.
+                </p>
+              </article>
+            ) : (
+              <article className="result-section-card result-map-card">
+                <div className="result-section-card__header">
+                  <div><span className="card-kicker">Site analysis · demo geometry</span><h3>Indicative buildable area</h3></div>
+                  <div className="map-tabs"><button className="map-tab map-tab--active">Parcel</button><button className="map-tab">Zoning</button><button className="map-tab">Constraints</button></div>
                 </div>
-              </div>
-              <p className="map-disclaimer">Illustrative geometry only in prototype mode. Production geometry must come from authoritative or licensed parcel/spatial sources.</p>
-            </article>
+                <div className="site-plan site-plan--large">
+                  <div className="site-plan__north">N</div>
+                  <div className="site-plan__road">STREET</div>
+                  <div className="site-plan__parcel">
+                    <div className="site-plan__buildable" />
+                    <div className="site-plan__house">EXISTING HOME</div>
+                    <div className="site-plan__project"><span>PROPOSED</span><strong>{selectedProject.shortLabel.toUpperCase()}</strong></div>
+                    <span className="site-plan__measure site-plan__measure--rear">5′ setback</span>
+                    <span className="site-plan__measure site-plan__measure--side">5′ setback</span>
+                  </div>
+                  <div className="site-plan__legend">
+                    <span><i className="legend-box legend-box--parcel" /> Parcel</span>
+                    <span><i className="legend-box legend-box--buildable" /> Indicative buildable area</span>
+                    <span><i className="legend-box legend-box--project" /> Proposed project</span>
+                  </div>
+                </div>
+                <p className="map-disclaimer">Illustrative geometry only in prototype mode. Production geometry must come from authoritative or licensed parcel/spatial sources.</p>
+              </article>
+            )}
 
             <article className="result-section-card">
               <div className="result-section-card__header">
@@ -202,7 +236,8 @@ export default async function AnalyzePage({ searchParams }: { searchParams: Prom
                   <div><dt>Parcel ID</dt><dd>{liveProperty.parcel.parcelId || "Unavailable"}</dd></div>
                   <div><dt>Property ID</dt><dd>{liveProperty.parcel.propertyId || "Unavailable"}</dd></div>
                   <div><dt>Zoning</dt><dd>{liveProperty.zoning.zoningType || liveProperty.zoning.baseDistrict || "Unavailable"}</dd></div>
-                  <div><dt>Jurisdiction</dt><dd>{liveProperty.jurisdiction.label || "Austin area"}</dd></div>
+                  <div><dt>Jurisdiction</dt><dd>{jurisdictionDisplay}</dd></div>
+                  <div><dt>Flood scan</dt><dd>{floodLabel(liveProperty.flood.parcelIntersectsMappedFloodplain)}</dd></div>
                   <div><dt>Address match</dt><dd>{Math.round(liveProperty.matchScore)}%</dd></div>
                 </dl>
               ) : (
